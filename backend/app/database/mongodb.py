@@ -1,4 +1,3 @@
-import ssl
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import MONGODB_URL, MONGODB_DB_NAME
 
@@ -9,20 +8,18 @@ db = None
 async def connect_db():
     global client, db
     try:
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        url = MONGODB_URL
+        if "tlsInsecure" not in url and "tlsAllowInvalidCertificates" not in url:
+            sep = "&" if "?" in url else "?"
+            url += sep + "tlsInsecure=true"
         client = AsyncIOMotorClient(
-            MONGODB_URL,
-            tls=True,
-            tlsAllowInvalidCertificates=True,
-            ssl_context=ctx,
+            url,
             serverSelectionTimeoutMS=20000,
             connectTimeoutMS=20000,
         )
         db = client[MONGODB_DB_NAME]
         await db.command("ping")
-        print("Connected to MongoDB at", MONGODB_URL[:30] + "...")
+        print("Connected to MongoDB")
     except Exception as e:
         print("WARNING: Could not connect to MongoDB:", e)
         print("App will start, but DB features won't work until connection is established.")
