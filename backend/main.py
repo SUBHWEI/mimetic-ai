@@ -31,4 +31,6 @@ app.include_router(report.router, prefix="/api", tags=["Report"])
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "Mimetic AI"}
+    from app.database.mongodb import get_db
+    db_ok = get_db() is not None
+    return {"status": "ok" if db_ok else "degraded", "service": "Mimetic AI", "database": "connected" if db_ok else "disconnected"}

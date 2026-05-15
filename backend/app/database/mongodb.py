@@ -8,7 +8,11 @@ db = None
 async def connect_db():
     global client, db
     try:
-        client = AsyncIOMotorClient(MONGODB_URL)
+        client = AsyncIOMotorClient(
+            MONGODB_URL,
+            tlsAllowInvalidCertificates=True,
+            serverSelectionTimeoutMS=15000,
+        )
         db = client[MONGODB_DB_NAME]
         await db.command("ping")
         print("Connected to MongoDB at", MONGODB_URL[:30] + "...")
