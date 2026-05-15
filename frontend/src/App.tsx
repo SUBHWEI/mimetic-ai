@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
+const API = import.meta.env.VITE_API_URL || ''
+
 type Message = {
   id: string
   role: 'user' | 'assistant'
@@ -131,7 +133,7 @@ function App() {
   const submitPatientInfo = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/patient', {
+      const res = await fetch(API + '/api/patient', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ patient_info: patientInfo }),
@@ -167,7 +169,7 @@ function App() {
 
     setLoading(true)
     try {
-      const res = await fetch('/api/converse', {
+      const res = await fetch(API + '/api/converse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -212,7 +214,7 @@ function App() {
   const generateReport = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/report', {
+      const res = await fetch(API + '/api/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
