@@ -117,7 +117,7 @@ function App() {
   const [patientInfo, setPatientInfo] = useState<PatientInfo>({})
   const [phase, setPhase] = useState<'patient_info' | 'symptoms' | 'report'>('patient_info')
   const allFieldKeys = FIELD_GROUPS.flatMap(g => g.fields.map(f => f.key))
-  const [missingFields, setMissingFields] = useState<string[]>(allFieldKeys)
+  const [_missingFields, setMissingFields] = useState<string[]>(allFieldKeys)
   const [reportHtml, setReportHtml] = useState<string | null>(null)
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
@@ -251,8 +251,6 @@ function App() {
   const suggestedSymptoms = messages
     .flatMap((m) => m.suggestions || [])
     .filter((s, i, arr) => arr.indexOf(s) === i)
-
-  const lastMsg = messages[messages.length - 1]
 
   // Patient info form
   if (phase === 'patient_info') {
