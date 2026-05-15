@@ -1,19 +1,25 @@
+import ssl
+from urllib.parse import urlparse, urlunparse
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import MONGODB_URL, MONGODB_DB_NAME
 
 client = None
 db = None
 
+# Force TLS 1.2 globally
+ssl._create_default_https_context = lambda: ssl._create_unverified_context(
+    protocol=ssl.PROTOCOL_TLSv1_2
+)
+
 
 async def connect_db():
     global client, db
     try:
-        url = MONGODB_URL
-        if "tlsInsecure" not in url and "tlsAllowInvalidCertificates" not in url:
-            sep = "&" if "?" in url else "?"
-            url += sep + "tlsInsecure=true"
         client = AsyncIOMotorClient(
-            url,
+            MONGODB_URL,
+            tls=True,
+            tlsAllowInvalidCertificates=True,
+            tlsAllowInvalidHostnames=True,
             serverSelectionTimeoutMS=20000,
             connectTimeoutMS=20000,
         )
@@ -22,7 +28,6 @@ async def connect_db():
         print("Connected to MongoDB")
     except Exception as e:
         print("WARNING: Could not connect to MongoDB:", e)
-        print("App will start, but DB features won't work until connection is established.")
         client = None
         db = None
 
