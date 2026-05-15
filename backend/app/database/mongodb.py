@@ -1,3 +1,4 @@
+import ssl
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import MONGODB_URL, MONGODB_DB_NAME
 
@@ -8,10 +9,16 @@ db = None
 async def connect_db():
     global client, db
     try:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
         client = AsyncIOMotorClient(
             MONGODB_URL,
+            tls=True,
             tlsAllowInvalidCertificates=True,
-            serverSelectionTimeoutMS=15000,
+            ssl_context=ctx,
+            serverSelectionTimeoutMS=20000,
+            connectTimeoutMS=20000,
         )
         db = client[MONGODB_DB_NAME]
         await db.command("ping")
