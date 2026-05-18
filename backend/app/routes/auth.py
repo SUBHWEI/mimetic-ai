@@ -79,10 +79,7 @@ async def register(data: UserCreate):
                 {"$set": {"code": code, "expires_at": datetime.utcnow() + timedelta(minutes=10)}},
                 upsert=True,
             )
-            try:
-                send_verification_code(data.email, code, data.name)
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+            send_verification_code(data.email, code, data.name)
             return {"message": "Verification code sent to email", "email": data.email}
 
     if data.document_number:
@@ -117,11 +114,7 @@ async def register(data: UserCreate):
         upsert=True,
     )
 
-    try:
-        send_verification_code(data.email, code, data.name)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
-
+    send_verification_code(data.email, code, data.name)
     return {"message": "Verification code sent to email", "email": data.email}
 
 
