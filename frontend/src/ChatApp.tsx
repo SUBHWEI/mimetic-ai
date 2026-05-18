@@ -56,16 +56,34 @@ type PatientInfo = {
   height?: string
 }
 
-const FIELD_GROUPS = [
+type FieldConfig = {
+  key: string
+  label: string
+  placeholder?: string
+  type?: 'text' | 'select'
+  options?: { value: string; label: string }[]
+  suffix?: string
+}
+
+const FIELD_GROUPS: { title: string; fields: FieldConfig[] }[] = [
   {
     title: 'Identificación del Paciente',
     fields: [
       { key: 'name', label: 'Nombre completo', placeholder: 'Ej: Juan Pérez' },
-      { key: 'document_type', label: 'Tipo de documento', placeholder: 'CC / TI / CE / RC' },
+      { key: 'document_type', label: 'Tipo de documento', type: 'select', options: [
+        { value: 'CC', label: 'Cédula de Ciudadanía (CC)' },
+        { value: 'TI', label: 'Tarjeta de Identidad (TI)' },
+        { value: 'CE', label: 'Cédula de Extranjería (CE)' },
+        { value: 'RC', label: 'Registro Civil (RC)' },
+      ]},
       { key: 'id_document', label: 'Número de documento', placeholder: 'Ej: 123456789' },
       { key: 'birth_date', label: 'Fecha de nacimiento', placeholder: 'DD/MM/AAAA' },
-      { key: 'age', label: 'Edad', placeholder: 'Ej: 45' },
-      { key: 'gender', label: 'Género', placeholder: 'M / F / Otro' },
+      { key: 'age', label: 'Edad', placeholder: 'Ej: 45', suffix: 'años' },
+      { key: 'gender', label: 'Género', type: 'select', options: [
+        { value: 'M', label: 'Masculino' },
+        { value: 'F', label: 'Femenino' },
+        { value: 'Otro', label: 'Otro' },
+      ]},
       { key: 'occupation', label: 'Ocupación', placeholder: 'Ej: Ingeniero' },
       { key: 'phone', label: 'Teléfono', placeholder: 'Ej: 3001234567' },
       { key: 'location', label: 'Ciudad de residencia', placeholder: 'Ej: Bogotá' },
@@ -74,8 +92,8 @@ const FIELD_GROUPS = [
   {
     title: 'Anamnesis',
     fields: [
-      { key: 'consultation_reason', label: 'Motivo de consulta', placeholder: 'Breve descripción del paciente' },
-      { key: 'symptom_evolution', label: 'Tiempo de evolución', placeholder: 'Ej: 3 días' },
+      { key: 'consultation_reason', label: 'Motivo de consulta', placeholder: 'Describe brevemente el motivo' },
+      { key: 'symptom_evolution', label: 'Tiempo de evolución', placeholder: 'Ej: 3 días', suffix: 'días/semanas' },
     ],
   },
   {
@@ -84,7 +102,10 @@ const FIELD_GROUPS = [
       { key: 'tobacco', label: 'Consumo de tabaco', placeholder: 'Sí / No / Frecuencia' },
       { key: 'alcohol', label: 'Consumo de alcohol', placeholder: 'Sí / No / Frecuencia' },
       { key: 'substances', label: 'Uso de sustancias', placeholder: 'Sí / No / Especificar' },
-      { key: 'physical_activity', label: 'Actividad física', placeholder: 'Activo / Sedentario' },
+      { key: 'physical_activity', label: 'Actividad física', type: 'select', options: [
+        { value: 'Activo', label: 'Activo (ejercicio regular)' },
+        { value: 'Sedentario', label: 'Sedentario (poco o ningún ejercicio)' },
+      ]},
       { key: 'medical_history', label: 'Antecedentes médicos', placeholder: 'Diabetes, HTA, etc.' },
       { key: 'surgical_history', label: 'Antecedentes quirúrgicos', placeholder: 'Cirugías previas' },
       { key: 'pharmacological_history', label: 'Antecedentes farmacológicos', placeholder: 'Medicamentos actuales' },
@@ -94,12 +115,12 @@ const FIELD_GROUPS = [
   {
     title: 'Signos Vitales',
     fields: [
-      { key: 'blood_pressure', label: 'Presión arterial (mmHg)', placeholder: 'Ej: 120/80' },
-      { key: 'heart_rate', label: 'Frecuencia cardíaca (lpm)', placeholder: 'Ej: 72' },
-      { key: 'respiratory_rate', label: 'Frecuencia respiratoria (rpm)', placeholder: 'Ej: 16' },
-      { key: 'temperature', label: 'Temperatura (°C)', placeholder: 'Ej: 36.5' },
-      { key: 'weight', label: 'Peso (kg)', placeholder: 'Ej: 70' },
-      { key: 'height', label: 'Estatura (cm)', placeholder: 'Ej: 170' },
+      { key: 'blood_pressure', label: 'Presión arterial (PA)', placeholder: 'Ej: 120/80', suffix: 'mmHg' },
+      { key: 'heart_rate', label: 'Frecuencia cardíaca (FC)', placeholder: 'Ej: 72', suffix: 'lpm' },
+      { key: 'respiratory_rate', label: 'Frecuencia respiratoria (FR)', placeholder: 'Ej: 16', suffix: 'rpm' },
+      { key: 'temperature', label: 'Temperatura', placeholder: 'Ej: 36.5', suffix: '°C' },
+      { key: 'weight', label: 'Peso', placeholder: 'Ej: 70', suffix: 'kg' },
+      { key: 'height', label: 'Estatura', placeholder: 'Ej: 170', suffix: 'cm' },
     ],
   },
 ]
@@ -128,6 +149,18 @@ export default function ChatApp() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    if (phase === 'patient_info') {
+      const el = sectionRefs.current[formStep]
+      if (el) {
+        const first = el.querySelector('input, select') as HTMLElement
+        if (first) setTimeout(() => first.focus(), 100)
+      }
+    }
+  }, [formStep, phase])
+
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const handlePatientFieldChange = (key: string, value: string) => {
     setPatientInfo(prev => ({ ...prev, [key]: value }))
@@ -257,7 +290,6 @@ export default function ChatApp() {
 
   // Patient info form
   if (phase === 'patient_info') {
-    const isAllDone = FIELD_GROUPS.every(g => g.fields.every(f => patientInfo[f.key as keyof PatientInfo]?.trim()))
     const filledCount = Object.values(patientInfo).filter(v => v?.toString().trim()).length
     const progress = Math.round((filledCount / allFieldKeys.length) * 100)
     const sectionIcons = ['📋', '💬', '📄', '🩺']
@@ -308,29 +340,54 @@ export default function ChatApp() {
               })}
             </div>
 
-            <div className="patient-section visible">
+            <div className="patient-section visible" ref={el => sectionRefs.current[formStep] = el}>
               <h4 className="patient-section-title">
                 {sectionIcons[formStep]} {visibleGroup.title}
               </h4>
               <div className="patient-fields-grid">
-                {visibleGroup.fields.map(f => (
-                  <div key={f.key} className="patient-field">
-                    <label>{f.label}</label>
-                    <input
-                      type="text"
-                      placeholder={f.placeholder}
-                      value={patientInfo[f.key as keyof PatientInfo] || ''}
-                      onChange={e => handlePatientFieldChange(f.key, e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          const nextIdx = document.activeElement?.parentElement?.nextElementSibling?.querySelector('input')
-                          if (nextIdx) (nextIdx as HTMLInputElement).focus()
-                        }
-                      }}
-                      disabled={loading}
-                    />
-                  </div>
-                ))}
+                {visibleGroup.fields.map((f) => {
+                  const val = patientInfo[f.key as keyof PatientInfo] || ''
+                  const filled = !!val.trim()
+                  return (
+                    <div key={f.key} className={`patient-field ${filled ? 'filled' : ''}`}>
+                      <div className="patient-field-label-row">
+                        <label>{f.label}</label>
+                        {filled && <span className="patient-field-check">✓</span>}
+                      </div>
+                      <div className="patient-field-input-wrap">
+                        {f.type === 'select' ? (
+                          <select
+                            value={val}
+                            onChange={e => handlePatientFieldChange(f.key, e.target.value)}
+                            disabled={loading}
+                          >
+                            <option value="">-- Seleccionar --</option>
+                            {f.options?.map(o => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            placeholder={f.placeholder}
+                            value={val}
+                            onChange={e => handlePatientFieldChange(f.key, e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                const inputs = document.querySelectorAll('.patient-section.visible input, .patient-section.visible select')
+                                const current = Array.from(inputs).indexOf(e.target as HTMLElement)
+                                const next = inputs[current + 1] as HTMLElement
+                                if (next) next.focus()
+                              }
+                            }}
+                            disabled={loading}
+                          />
+                        )}
+                        {f.suffix && <span className="patient-field-suffix">{f.suffix}</span>}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
@@ -348,7 +405,24 @@ export default function ChatApp() {
                   Siguiente →
                 </button>
               )}
-              {formStep === FIELD_GROUPS.length - 1 && (
+            </div>
+
+            {/* Summary + Submit at the bottom */}
+            {formStep === FIELD_GROUPS.length - 1 && (
+              <div className="patient-summary">
+                <h4 className="patient-section-title">📋 Resumen del Paciente</h4>
+                <div className="patient-summary-grid">
+                  {FIELD_GROUPS.map((g, gi) => (
+                    <div key={gi} className="patient-summary-group">
+                      <strong>{g.title}</strong>
+                      {g.fields.map(f => {
+                        const val = patientInfo[f.key as keyof PatientInfo]
+                        if (!val?.trim()) return null
+                        return <span key={f.key} className="patient-summary-item"><em>{f.label}:</em> {val}</span>
+                      })}
+                    </div>
+                  ))}
+                </div>
                 <button
                   className="patient-submit"
                   onClick={submitPatientInfo}
@@ -356,8 +430,8 @@ export default function ChatApp() {
                 >
                   {loading ? 'Registrando...' : '✓ Finalizar y comenzar consulta'}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           <div ref={endRef} />
