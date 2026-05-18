@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import SocialLogin from '../components/SocialLogin'
 
 export default function Login() {
   const { user, login } = useAuth()
@@ -57,6 +58,8 @@ export default function Login() {
             {submitting ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
+        <div className="social-divider"><span>O continúa con</span></div>
+        <SocialLogin />
         <p className="auth-footer">
           ¿No tienes cuenta? <Link to="/register">Regístrate</Link>
         </p>

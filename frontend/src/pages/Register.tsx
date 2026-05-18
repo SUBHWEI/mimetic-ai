@@ -6,14 +6,28 @@ const API = import.meta.env.VITE_API_URL || ''
 
 export default function Register() {
   const { user } = useAuth()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [form, setForm] = useState({
+    first_name: '',
+    last_name: '',
+    document_type: 'CC',
+    document_number: '',
+    email: '',
+    phone: '',
+    country: 'Colombia',
+    department: '',
+    city: '',
+    birth_date: '',
+    name: '',
+    password: '',
+  })
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [step, setStep] = useState<'form' | 'verify'>('form')
   const [code, setCode] = useState('')
   const [verifying, setVerifying] = useState(false)
+
+  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(prev => ({ ...prev, [key]: e.target.value }))
 
   if (user) return <Navigate to="/" replace />
 
@@ -22,10 +36,14 @@ export default function Register() {
     setError('')
     setSubmitting(true)
     try {
+      const body = {
+        ...form,
+        name: `${form.first_name} ${form.last_name}`,
+      }
       const res = await fetch(API + '/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, password }),
+        body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Registration failed')
@@ -44,7 +62,7 @@ export default function Register() {
       const res = await fetch(API + '/api/auth/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ email: form.email, code }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Verification failed')
@@ -67,39 +85,72 @@ export default function Register() {
         {step === 'form' ? (
           <form onSubmit={handleSubmit}>
             <h2>Registro de paciente</h2>
-            <p className="auth-hint">Crea tu cuenta para consultar tus diagnósticos e historias clínicas</p>
+            <p className="auth-hint">Completa todos tus datos para crear tu historial médico</p>
             {error && <div className="auth-error">{error}</div>}
-            <div className="auth-field">
-              <label>Nombre completo</label>
-              <input
-                type="text"
-                placeholder="Ej: Juan Pérez"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                required
-              />
+
+            <div className="auth-row">
+              <div className="auth-field">
+                <label>Nombres</label>
+                <input type="text" placeholder="Ej: Juan Andrés" value={form.first_name} onChange={set('first_name')} required />
+              </div>
+              <div className="auth-field">
+                <label>Apellidos</label>
+                <input type="text" placeholder="Ej: Pérez García" value={form.last_name} onChange={set('last_name')} required />
+              </div>
             </div>
+
+            <div className="auth-row">
+              <div className="auth-field">
+                <label>Tipo de documento</label>
+                <select value={form.document_type} onChange={set('document_type')} required>
+                  <option value="CC">Cédula de Ciudadanía</option>
+                  <option value="CE">Cédula de Extranjería</option>
+                  <option value="TI">Tarjeta de Identidad</option>
+                  <option value="Pasaporte">Pasaporte</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <div className="auth-field">
+                <label>Número de documento</label>
+                <input type="text" placeholder="Ej: 1234567890" value={form.document_number} onChange={set('document_number')} required />
+              </div>
+            </div>
+
+            <div className="auth-field">
+              <label>Fecha de nacimiento</label>
+              <input type="date" value={form.birth_date} onChange={set('birth_date')} required />
+            </div>
+
             <div className="auth-field">
               <label>Correo electrónico</label>
-              <input
-                type="email"
-                placeholder="paciente@correo.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
+              <input type="email" placeholder="paciente@correo.com" value={form.email} onChange={set('email')} required />
             </div>
+
+            <div className="auth-field">
+              <label>Teléfono de contacto</label>
+              <input type="tel" placeholder="Ej: 3001234567" value={form.phone} onChange={set('phone')} required />
+            </div>
+
+            <div className="auth-row auth-row-3">
+              <div className="auth-field">
+                <label>País</label>
+                <input type="text" placeholder="Ej: Colombia" value={form.country} onChange={set('country')} required />
+              </div>
+              <div className="auth-field">
+                <label>Departamento</label>
+                <input type="text" placeholder="Ej: Cundinamarca" value={form.department} onChange={set('department')} required />
+              </div>
+              <div className="auth-field">
+                <label>Ciudad</label>
+                <input type="text" placeholder="Ej: Bogotá" value={form.city} onChange={set('city')} required />
+              </div>
+            </div>
+
             <div className="auth-field">
               <label>Contraseña</label>
-              <input
-                type="password"
-                placeholder="Mínimo 6 caracteres"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
+              <input type="password" placeholder="Mínimo 6 caracteres" value={form.password} onChange={set('password')} required minLength={6} />
             </div>
+
             <button type="submit" className="auth-btn" disabled={submitting}>
               {submitting ? 'Enviando...' : 'Crear cuenta'}
             </button>
@@ -108,7 +159,7 @@ export default function Register() {
           <form onSubmit={handleVerify}>
             <h2>Verifica tu correo</h2>
             <p className="auth-hint">
-              Hemos enviado un código de verificación a <strong>{email}</strong>
+              Hemos enviado un código de verificación a <strong>{form.email}</strong>
             </p>
             {error && <div className="auth-error">{error}</div>}
             <div className="auth-field">

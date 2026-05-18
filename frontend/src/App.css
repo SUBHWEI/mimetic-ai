@@ -642,10 +642,25 @@
 .auth-card {
   background: #1e293b;
   border-radius: 16px;
-  padding: 2.5rem;
+  padding: 2rem;
   width: 100%;
-  max-width: 420px;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 0 40px rgba(99, 102, 241, 0.1);
+}
+
+.auth-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auth-card::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
 }
 
 .auth-header {
@@ -685,6 +700,16 @@
   margin-bottom: 1rem;
 }
 
+.auth-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.auth-row.auth-row-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 .auth-field {
   display: flex;
   flex-direction: column;
@@ -698,7 +723,10 @@
   font-weight: 600;
 }
 
-.auth-field input {
+.auth-field input,
+.auth-field select {
+  box-sizing: border-box;
+  width: 100%;
   padding: 0.625rem 0.875rem;
   border-radius: 8px;
   border: 1px solid #334155;
@@ -709,7 +737,13 @@
   transition: border-color 0.2s;
 }
 
-.auth-field input:focus {
+.auth-field select {
+  cursor: pointer;
+  appearance: auto;
+}
+
+.auth-field input:focus,
+.auth-field select:focus {
   border-color: #6366f1;
 }
 
@@ -853,4 +887,89 @@
   font-size: 0.8rem;
   color: #64748b;
   margin: 0 0 1rem;
+}
+
+/* ── Social login ──────────────────────────────────── */
+.social-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.25rem 0;
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.social-divider::before,
+.social-divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid #334155;
+}
+
+.social-login {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.social-btn:hover {
+  border-color: #6366f1;
+  background: #1a1f35;
+}
+
+.social-btn.facebook {
+  background: #1877f2;
+  border-color: #1877f2;
+  color: #fff;
+}
+
+.social-btn.facebook:hover {
+  background: #166fe5;
+}
+
+.social-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.social-confirm-header {
+  text-align: center;
+}
+
+.social-confirm-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.social-confirm-header p {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.auth-btn.cancel {
+  background: #334155;
+  margin-top: 0;
+}
+
+.auth-btn.cancel:hover {
+  background: #475569;
 }
