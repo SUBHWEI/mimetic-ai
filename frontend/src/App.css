@@ -475,33 +475,137 @@
   color: #0f172a;
 }
 
-/* ── Patient form ─────────────────────────────────── */
+/* ── Patient form (step wizard) ──────────────────── */
 .patient-form {
-  background: #1e293b;
-  border-radius: 12px;
-  padding: 1.25rem;
+  background: linear-gradient(145deg, #1e293b 0%, #1a1f35 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
   margin: 0.5rem 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+  border: 1px solid #334155;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
 }
 
-.patient-form h3 {
+.patient-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.patient-form-header h3 {
+  color: #e2e8f0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.patient-step-count {
+  font-size: 0.75rem;
+  color: #64748b;
+  background: #0f172a;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* Progress bar */
+.patient-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #0f172a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.patient-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #22c55e);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* Step indicators */
+.patient-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.patient-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.patient-step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: #0f172a;
+  border: 2px solid #334155;
+  color: #64748b;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.patient-step.active .patient-step-num {
+  border-color: #6366f1;
   color: #a5b4fc;
-  font-size: 1rem;
-  margin: 0 0 0.5rem;
+  background: #1a1f35;
+  box-shadow: 0 0 12px rgba(99,102,241,0.3);
 }
 
+.patient-step.done .patient-step-num {
+  border-color: #22c55e;
+  color: #fff;
+  background: #22c55e;
+  font-size: 0.8rem;
+}
+
+/* Section card */
 .patient-section {
-  margin-bottom: 0.75rem;
+  display: none;
+}
+
+.patient-section.visible {
+  display: block;
+  animation: fadeSlideIn 0.35s ease;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .patient-section-title {
-  color: #818cf8;
-  font-size: 0.85rem;
-  margin: 0 0 0.375rem;
-  padding-bottom: 0.25rem;
+  color: #c7d2fe;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid #1e293b;
+  letter-spacing: 0.01em;
+}
+
+.patient-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
 }
 
 .patient-field {
@@ -511,46 +615,92 @@
 }
 
 .patient-field label {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #94a3b8;
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .patient-field input {
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
   border: 1px solid #334155;
   background: #0f172a;
   color: #e2e8f0;
   font-size: 0.85rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .patient-field input:focus {
   border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
+
+.patient-field input::placeholder {
+  color: #475569;
+}
+
+/* Nav buttons */
+.patient-nav {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.patient-nav-btn {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.patient-nav-btn:hover {
+  border-color: #6366f1;
+  color: #a5b4fc;
+  background: #1a1f35;
+}
+
+.patient-nav-btn.primary {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  border-color: transparent;
+  color: #fff;
+}
+
+.patient-nav-btn.primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 0 16px rgba(99,102,241,0.3);
 }
 
 .patient-submit {
-  padding: 0.625rem 1rem;
-  border-radius: 8px;
+  flex: 1;
+  padding: 0.7rem 1.25rem;
+  border-radius: 10px;
   border: none;
   background: linear-gradient(135deg, #22c55e, #16a34a);
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.9rem;
   cursor: pointer;
-  margin-top: 0.25rem;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(34,197,94,0.25);
 }
 
 .patient-submit:hover {
   opacity: 0.9;
+  box-shadow: 0 0 28px rgba(34,197,94,0.4);
 }
 
 .patient-submit:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* ── Patient bar (top info strip) ─────────────────── */

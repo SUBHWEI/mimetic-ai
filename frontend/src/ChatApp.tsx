@@ -121,6 +121,7 @@ export default function ChatApp() {
   const allFieldKeys = FIELD_GROUPS.flatMap(g => g.fields.map(f => f.key))
   const [_missingFields, setMissingFields] = useState<string[]>(allFieldKeys)
   const [reportHtml, setReportHtml] = useState<string | null>(null)
+  const [formStep, setFormStep] = useState(0)
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
 
@@ -256,6 +257,12 @@ export default function ChatApp() {
 
   // Patient info form
   if (phase === 'patient_info') {
+    const isAllDone = FIELD_GROUPS.every(g => g.fields.every(f => patientInfo[f.key as keyof PatientInfo]?.trim()))
+    const filledCount = Object.values(patientInfo).filter(v => v?.toString().trim()).length
+    const progress = Math.round((filledCount / allFieldKeys.length) * 100)
+    const sectionIcons = ['📋', '💬', '📄', '🩺']
+    const visibleGroup = FIELD_GROUPS[formStep]
+
     return (
       <div className="app">
         <header className="header">
@@ -278,11 +285,35 @@ export default function ChatApp() {
           ))}
 
           <div className="patient-form">
-            <h3>Registro del Paciente</h3>
-            {FIELD_GROUPS.map((group, gi) => (
-              <div key={gi} className="patient-section">
-                <h4 className="patient-section-title">{group.title}</h4>
-                {group.fields.map(f => (
+            <div className="patient-form-header">
+              <h3>Registro del Paciente</h3>
+              <span className="patient-step-count">{formStep + 1} / {FIELD_GROUPS.length}</span>
+            </div>
+
+            <div className="patient-progress-bar">
+              <div className="patient-progress-fill" style={{ width: `${progress}%` }} />
+            </div>
+
+            <div className="patient-steps">
+              {FIELD_GROUPS.map((group, gi) => {
+                const isActive = gi === formStep
+                const isDone = group.fields.every(f => patientInfo[f.key as keyof PatientInfo]?.trim())
+                return (
+                  <div key={gi} className={`patient-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}>
+                    <div className={`patient-step-num ${isDone ? 'done' : ''}`}>
+                      {isDone ? '✓' : sectionIcons[gi]}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="patient-section visible">
+              <h4 className="patient-section-title">
+                {sectionIcons[formStep]} {visibleGroup.title}
+              </h4>
+              <div className="patient-fields-grid">
+                {visibleGroup.fields.map(f => (
                   <div key={f.key} className="patient-field">
                     <label>{f.label}</label>
                     <input
@@ -292,8 +323,8 @@ export default function ChatApp() {
                       onChange={e => handlePatientFieldChange(f.key, e.target.value)}
                       onKeyDown={e => {
                         if (e.key === 'Enter') {
-                          const filled = FIELD_GROUPS.some(g => g.fields.some(f => patientInfo[f.key as keyof PatientInfo]?.trim()))
-                          if (filled) submitPatientInfo()
+                          const nextIdx = document.activeElement?.parentElement?.nextElementSibling?.querySelector('input')
+                          if (nextIdx) (nextIdx as HTMLInputElement).focus()
                         }
                       }}
                       disabled={loading}
@@ -301,14 +332,32 @@ export default function ChatApp() {
                   </div>
                 ))}
               </div>
-            ))}
-            <button
-              className="patient-submit"
-              onClick={submitPatientInfo}
-              disabled={loading}
-            >
-              {loading ? 'Registrando...' : 'Registrar paciente y comenzar'}
-            </button>
+            </div>
+
+            <div className="patient-nav">
+              {formStep > 0 && (
+                <button className="patient-nav-btn" onClick={() => setFormStep(s => s - 1)}>
+                  ← Anterior
+                </button>
+              )}
+              {formStep < FIELD_GROUPS.length - 1 && (
+                <button
+                  className="patient-nav-btn primary"
+                  onClick={() => setFormStep(s => Math.min(s + 1, FIELD_GROUPS.length - 1))}
+                >
+                  Siguiente →
+                </button>
+              )}
+              {formStep === FIELD_GROUPS.length - 1 && (
+                <button
+                  className="patient-submit"
+                  onClick={submitPatientInfo}
+                  disabled={loading}
+                >
+                  {loading ? 'Registrando...' : '✓ Finalizar y comenzar consulta'}
+                </button>
+              )}
+            </div>
           </div>
 
           <div ref={endRef} />
@@ -342,7 +391,7 @@ export default function ChatApp() {
           <button onClick={() => { setPhase('symptoms'); setReportHtml(null) }}>
             Volver al diagnóstico
           </button>
-          <button onClick={() => { setPhase('patient_info'); setReportHtml(null); setCurrentSymptoms([]); setPatientInfo({}); setSelectedDiagnosis(null); setMissingFields(FIELD_GROUPS.flatMap(g => g.fields.map(f => f.key))); setMessages([
+          <button onClick={() => { setPhase('patient_info'); setFormStep(0); setReportHtml(null); setCurrentSymptoms([]); setPatientInfo({}); setSelectedDiagnosis(null); setMissingFields(FIELD_GROUPS.flatMap(g => g.fields.map(f => f.key))); setMessages([
             { id: '0', role: 'assistant', text: 'Hola, soy Mimetic AI. Antes de comenzar, necesito los datos del paciente.' },
           ]) }}>
             Nueva consulta
