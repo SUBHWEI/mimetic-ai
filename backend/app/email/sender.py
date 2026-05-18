@@ -1,13 +1,16 @@
 import smtplib
 import json
+import base64
 import threading
 import logging
 import urllib.request
+import urllib.parse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from app.config import (
     SMTP_HOST, SMTP_PORT, SMTP_USE_SSL, SMTP_USER, SMTP_PASSWORD,
     SENDGRID_API_KEY, FROM_EMAIL,
+    GMAIL_API_CLIENT_ID, GMAIL_API_CLIENT_SECRET, GMAIL_API_REFRESH_TOKEN,
 )
 
 logger = logging.getLogger(__name__)
@@ -68,8 +71,51 @@ def _send_sendgrid(to_email: str, html: str):
     logger.info(f"Email sent via SendGrid to {to_email}")
 
 
+def _send_gmail_api(to_email: str, html: str):
+    import time
+
+    data = urllib.parse.urlencode({
+        "client_id": GMAIL_API_CLIENT_ID,
+        "client_secret": GMAIL_API_CLIENT_SECRET,
+        "refresh_token": GMAIL_API_REFRESH_TOKEN,
+        "grant_type": "refresh_token",
+    }).encode()
+    token_req = urllib.request.Request(
+        "https://oauth2.googleapis.com/token", data=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    with urllib.request.urlopen(token_req, timeout=15) as resp:
+        token_data = json.loads(resp.read())
+    access_token = token_data["access_token"]
+
+    msg = MIMEText(html, "html")
+    msg["From"] = "Mimetic AI <mimeticvalidated@gmail.com>"
+    msg["To"] = to_email
+    msg["Subject"] = "Código de verificación - Mimetic AI"
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+
+    body = json.dumps({"raw": raw}).encode()
+    send_req = urllib.request.Request(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+        },
+    )
+    with urllib.request.urlopen(send_req, timeout=15) as resp:
+        logger.info(f"Email sent via Gmail API to {to_email}: {resp.status}")
+
+
 def _send(to_email: str, code: str, name: str):
     html = _build_html(code, name)
+
+    if GMAIL_API_CLIENT_ID and GMAIL_API_CLIENT_SECRET and GMAIL_API_REFRESH_TOKEN:
+        try:
+            _send_gmail_api(to_email, html)
+            return
+        except Exception as e:
+            logger.error(f"Gmail API failed for {to_email}: {e}")
 
     if SENDGRID_API_KEY:
         try:
