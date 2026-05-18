@@ -24,6 +24,13 @@
   margin-right: 0.25rem;
 }
 
+.header-logo-lg {
+  width: 200px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
 .header h1 {
   font-size: 1.25rem;
   font-weight: 700;
