@@ -77,8 +77,9 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-header">
-          <h1>Mimetic AI</h1>
+          <div className="auth-header">
+            <img src="/logo.png" alt="Mimetic AI" className="auth-logo" />
+            <h1>Mimetic AI</h1>
           <p>Sistema de apoyo al diagnóstico médico</p>
         </div>
 

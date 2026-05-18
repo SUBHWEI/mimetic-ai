@@ -6,7 +6,7 @@ export default function PatientDashboard() {
   return (
     <div className="app">
       <header className="header">
-        <h1>Mimetic AI</h1>
+        <h1><img src="/logo.png" alt="" className="header-logo" />Mimetic AI</h1>
         <span className="subtitle">Portal del Paciente</span>
         <div className="header-right">
           <span className="user-badge">{user?.name}</span>
