@@ -44,6 +44,17 @@ async def require_admin(current_user: UserOut = Depends(get_current_user)):
     return current_user
 
 
+@router.post("/test-email")
+async def test_email(data: dict):
+    email = data.get("email", "")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email required")
+    from app.email.sender import send_verification_code
+    code = str(random.randint(100000, 999999))
+    send_verification_code(email, code, "Test User")
+    return {"message": "Email sent (check Render logs for errors)", "code_preview": code}
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(data: UserCreate):
     db = get_db()

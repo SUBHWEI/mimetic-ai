@@ -1,8 +1,11 @@
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.mongodb import connect_db, close_db, get_db
 from app.routes import diagnosis, knowledge, converse, patient, report, auth
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
 async def auto_seed():
