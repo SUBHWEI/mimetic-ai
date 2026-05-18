@@ -2,6 +2,14 @@
 
 Sistema conversacional de apoyo al diagnóstico médico. Permite al médico registrar datos del paciente, describir síntomas en lenguaje natural, obtener diagnósticos diferenciales, revisar tratamientos y generar una historia clínica profesional.
 
+## Roles
+
+| Rol | Descripción |
+|-----|-------------|
+| **Admin** | Gestiona usuarios del hospital (médicos, personal). Acceso al panel de administración. |
+| **Médico** | Funcionalidad completa: registrar pacientes, chat con IA para diagnósticos, generar historias clínicas. |
+| **Paciente** | Consulta sus diagnósticos, historias clínicas y planes de tratamiento. |
+
 ## Stack
 
 | Capa | Tecnología |
@@ -47,6 +55,10 @@ Abrir http://localhost:5173
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
+| POST | `/api/auth/register` | Registro de paciente |
+| POST | `/api/auth/login` | Inicio de sesión |
+| POST | `/api/auth/create-user` | Crear usuario (solo admin) |
+| GET | `/api/auth/me` | Perfil del usuario autenticado |
 | POST | `/api/converse` | Chat conversacional |
 | POST | `/api/patient` | Registrar datos del paciente |
 | POST | `/api/report` | Generar historia clínica |
