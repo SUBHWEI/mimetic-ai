@@ -331,10 +331,11 @@ export default function ChatApp() {
                 const isActive = gi === formStep
                 const isDone = group.fields.every(f => patientInfo[f.key as keyof PatientInfo]?.trim())
                 return (
-                  <div key={gi} className={`patient-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}>
+                  <div key={gi} className={`patient-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`} onClick={() => gi <= formStep + 1 && setFormStep(gi)} style={gi <= formStep + 1 ? { cursor: 'pointer' } : {}}>
                     <div className={`patient-step-num ${isDone ? 'done' : ''}`}>
                       {isDone ? '✓' : sectionIcons[gi]}
                     </div>
+                    <span className="patient-step-label">{group.title}</span>
                   </div>
                 )
               })}

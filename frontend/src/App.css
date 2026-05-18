@@ -571,6 +571,24 @@
   font-size: 0.8rem;
 }
 
+.patient-step-label {
+  font-size: 0.65rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+  transition: color 0.2s;
+}
+
+.patient-step.active .patient-step-label {
+  color: #a5b4fc;
+}
+
+.patient-step.done .patient-step-label {
+  color: #22c55e;
+}
+
 /* Section card */
 .patient-section {
   display: none;
