@@ -28,6 +28,7 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
+          <img src="/logo.png" alt="Mimetic AI" className="auth-logo" />
           <h1>Mimetic AI</h1>
           <p>Sistema de apoyo al diagnóstico médico</p>
         </div>

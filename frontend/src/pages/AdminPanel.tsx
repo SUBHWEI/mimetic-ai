@@ -6,7 +6,7 @@ export default function AdminPanel() {
   return (
     <div className="app">
       <header className="header">
-        <h1>Mimetic AI</h1>
+        <h1><img src="/logo.png" alt="" className="header-logo" />Mimetic AI</h1>
         <span className="subtitle">Panel de Administración</span>
         <div className="header-right">
           <span className="user-badge">{user?.name}</span>
