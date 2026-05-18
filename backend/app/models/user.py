@@ -10,6 +10,16 @@ class User(BaseModel):
     name: str
     password_hash: str
     role: str = "paciente"
+    first_name: str = ""
+    last_name: str = ""
+    document_type: str = ""
+    document_number: str = ""
+    birth_date: str = ""
+    country: str = ""
+    department: str = ""
+    city: str = ""
+    phone: str = ""
+    verified: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -21,6 +31,15 @@ class UserCreate(BaseModel):
     email: str
     name: str
     password: str
+    first_name: str = ""
+    last_name: str = ""
+    document_type: str = ""
+    document_number: str = ""
+    birth_date: str = ""
+    country: str = ""
+    department: str = ""
+    city: str = ""
+    phone: str = ""
 
 
 class UserCreateByAdmin(BaseModel):
@@ -40,6 +59,15 @@ class UserOut(BaseModel):
     email: str
     name: str
     role: str
+    first_name: str
+    last_name: str
+    document_type: str
+    document_number: str
+    birth_date: str
+    country: str
+    department: str
+    city: str
+    phone: str
     created_at: datetime
 
 

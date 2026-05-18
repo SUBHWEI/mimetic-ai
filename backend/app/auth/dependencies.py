@@ -24,4 +24,19 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
     from app.models.user import UserOut
-    return UserOut(id=str(user["_id"]), email=user["email"], name=user["name"], role=user["role"], created_at=user["created_at"])
+    return UserOut(
+        id=str(user["_id"]),
+        email=user.get("email", ""),
+        name=user.get("name", ""),
+        role=user.get("role", "paciente"),
+        first_name=user.get("first_name", ""),
+        last_name=user.get("last_name", ""),
+        document_type=user.get("document_type", ""),
+        document_number=user.get("document_number", ""),
+        birth_date=user.get("birth_date", ""),
+        country=user.get("country", ""),
+        department=user.get("department", ""),
+        city=user.get("city", ""),
+        phone=user.get("phone", ""),
+        created_at=user.get("created_at"),
+    )
