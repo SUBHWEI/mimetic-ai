@@ -236,6 +236,488 @@ SYMPTOM_SYNONYMS: dict[str, list[str]] = {
         "presión detrás de los ojos", "me duelen los ojos",
         "dolor en los ojos",
     ],
+    "fatiga extrema": [
+        "fatiga extrema", "agotamiento extremo", "cansancio severo",
+        "no me puedo mover del cansancio", "fatiga severa",
+        "agotado total", "exhausto", "derrotado",
+    ],
+    "fatiga severa": [
+        "fatiga severa", "agotamiento extremo", "cansancio extremo",
+        "no tengo energía para nada",
+    ],
+    "mialgias": [
+        "mialgias", "dolores musculares", "dolor en todo el cuerpo",
+        "cuerpo cortado", "dolor generalizado",
+    ],
+    "orina turbia": [
+        "orina turbia", "orina lechosa", "orina espesa",
+        "pipi turbio", "orina nublada",
+    ],
+    "orina maloliente": [
+        "orina maloliente", "orina con mal olor", "pipi apestosa",
+        "orina que huele mal", "olor fuerte de orina",
+    ],
+    "urgencia urinaria": [
+        "urgencia urinaria", "ganas repentinas de orinar",
+        "no aguanto las ganas", "necesidad urgente de orinar",
+        "me aguanto las ganas",
+    ],
+    "petequias": [
+        "petequias", "puntos rojos en la piel", "manchitas rojas",
+        "puntos hemorrágicos", "sangrado debajo de la piel",
+    ],
+    "sangrado de encías": [
+        "sangrado de encías", "encias sangrantes", "me sangran las encías",
+        "sangre al cepillarme", "encias que sangran",
+    ],
+    "dolor abdominal intenso": [
+        "dolor abdominal intenso", "dolor de estómago fuerte",
+        "dolor abdominal severo", "retorcijón fuerte",
+    ],
+    "expectoración purulenta": [
+        "expectoración purulenta", "flema con pus", "flema verde",
+        "flema amarilla", "flema purulenta", "esputo purulento",
+    ],
+    "taquipnea": [
+        "taquipnea", "respiración rápida", "respiro muy rápido",
+        "respiración acelerada", "respiro rápido",
+    ],
+    "cianosis": [
+        "cianosis", "piel azulada", "labios morados",
+        "dedos morados", "coloración azul en la piel",
+        "me pongo morado",
+    ],
+    "expectoración": [
+        "expectoración", "flema", "esputo", "mucosidad",
+        "flemas al toser", "saco flemas",
+    ],
+    "sibilancias": [
+        "sibilancias", "silbido al respirar", "pito en el pecho",
+        "silbido en el pecho", "respiración silbante",
+        "me silba el pecho",
+    ],
+    "malestar general intenso": [
+        "malestar general intenso", "me siento muy mal",
+        "malestar fuerte", "me siento grave",
+    ],
+    "dolor ocular": [
+        "dolor ocular", "dolor de ojos", "me duelen los ojos",
+        "dolor en los globos oculares",
+    ],
+    "letargo": [
+        "letargo", "somnolencia", "mucho sueño", "no me puedo despertar",
+        "sueño excesivo", "adormecido", "muy dormido",
+    ],
+    "convulsiones": [
+        "convulsiones", "ataques", "crisis epiléptica",
+        "movimientos involuntarios del cuerpo",
+        "sacudidas violentas", "crisis convulsiva",
+    ],
+    "tos crónica": [
+        "tos crónica", "tos persistente", "tosiendo por semanas",
+        "llevo mucho tiempo tosiendo", "tos que no se quita",
+    ],
+    "inflamación de amígdalas": [
+        "inflamación de amígdalas", "amigdalitis",
+        "anginas inflamadas", "amígdalas rojas",
+        "anginas rojas", "amígdalas hinchadas",
+    ],
+    "exudado purulento": [
+        "exudado purulento", "pus", "secreción amarilla",
+        "supuración", "sale pus",
+    ],
+    "adenopatías cervicales": [
+        "adenopatías cervicales", "ganglios inflamados en el cuello",
+        "pelotas en el cuello", "ganglios en el cuello",
+        "bultos en el cuello",
+    ],
+    "rinorrea acuosa": [
+        "rinorrea acuosa", "mocos líquidos", "agua por la nariz",
+        "secreción nasal clara",
+    ],
+    "prurito nasal": [
+        "prurito nasal", "picazón en la nariz", "me pica la nariz",
+        "nariz que pica",
+    ],
+    "lagrimeo": [
+        "lagrimeo", "ojos llorosos", "lloran los ojos",
+        "se me salen las lágrimas", "ojos llorones",
+    ],
+    "dificultad para tragar": [
+        "dificultad para tragar", "disfagia", "no puedo tragar bien",
+        "me duele al tragar", "atragantamiento",
+    ],
+    "estornudos": [
+        "estornudos", "estornudar", "estornudo mucho",
+        "no paro de estornudar", "estornudo frecuente",
+    ],
+    "tenesmo": [
+        "tenesmo", "pujar para hacer del baño",
+        "sensación de evacuación incompleta",
+        "quiero hacer del baño pero no sale",
+    ],
+    "irritabilidad": [
+        "irritabilidad", "irritable", "mal humor",
+        "molesto por todo", "me irrito fácil",
+    ],
+    "pérdida auditiva temporal": [
+        "pérdida auditiva temporal", "no oigo bien",
+        "oigo menos", "sordera temporal",
+    ],
+    "sensación de oído tapado": [
+        "sensación de oído tapado", "oído tapado",
+        "oído obstruido", "siento el oído tapado",
+    ],
+    "orina oscura": [
+        "orina oscura", "pipi oscuro", "orina color té",
+        "orina color cola", "orina concentrada",
+    ],
+    "heces pálidas": [
+        "heces pálidas", "caca blanca", "heces claras",
+        "deposiciones pálidas", "heces color arcilla",
+    ],
+    "malestar general": [
+        "malestar general", "no me siento bien",
+        "indisposición", "me siento mal en general",
+        "malestar",
+    ],
+    "dolor torácico opresivo": [
+        "dolor torácico opresivo", "presión en el pecho",
+        "pecho apretado", "opresión torácica severa",
+        "pesadez en el pecho",
+    ],
+    "disnea": [
+        "disnea", "falta de aire", "dificultad para respirar",
+        "me falta el aire", "respiración corta",
+    ],
+    "sudoración profusa": [
+        "sudoración profusa", "sudor excesivo", "empapado en sudor",
+        "sudo mucho", "transpiración abundante",
+    ],
+    "palpitaciones": [
+        "palpitaciones", "corazón acelerado", "taquicardia",
+        "corazón saltón", "latidos fuertes",
+        "siento el corazón", "corazón rápido",
+    ],
+    "ansiedad": [
+        "ansiedad", "nervios", "angustia", "desesperación",
+        "nervioso", "intranquilo",
+    ],
+    "dolor epigástrico": [
+        "dolor epigástrico", "dolor en la boca del estómago",
+        "ardor en el estómago", "dolor en el epigastrio",
+    ],
+    "síncope": [
+        "síncope", "desmayo", "pérdida de conocimiento",
+        "me desmayé", "perdí el conocimiento", "me caí desmayado",
+    ],
+    "disnea de esfuerzo": [
+        "disnea de esfuerzo", "me falta el aire al caminar",
+        "fatiga al caminar", "cansancio al hacer ejercicio",
+        "me ahogo al caminar",
+    ],
+    "edema en piernas": [
+        "edema en piernas", "piernas hinchadas",
+        "pies hinchados", "tobillos inflamados",
+        "retención de líquidos en piernas",
+    ],
+    "ortopnea": [
+        "ortopnea", "no puedo respirar acostado",
+        "me ahogo al acostarme", "respirar mejor sentado",
+        "necesito almohadas para respirar",
+    ],
+    "vértigo": [
+        "vértigo", "todo da vueltas", "se mueve todo",
+        "mareo intenso", "sensación de giro",
+    ],
+    "visión borrosa": [
+        "visión borrosa", "veo borroso", "vista nublada",
+        "veo nublado", "pérdida de nitidez visual",
+    ],
+    "zumbido de oídos": [
+        "zumbido de oídos", "tinnitus", "pitido en el oído",
+        "zumbido en los oídos", "ruido en el oído",
+    ],
+    "epistaxis": [
+        "epistaxis", "sangrado nasal", "sangre por la nariz",
+        "me sangra la nariz", "hemorragia nasal",
+    ],
+    "poliuria": [
+        "poliuria", "orinar mucho", "mucha orina",
+        "exceso de orina", "producción excesiva de orina",
+    ],
+    "polidipsia": [
+        "polidipsia", "mucha sed", "sed excesiva",
+        "tengo mucha sed", "no me quita la sed",
+    ],
+    "polifagia": [
+        "polifagia", "mucha hambre", "hambre excesiva",
+        "como mucho y aún tengo hambre",
+    ],
+    "pérdida de peso inexplicada": [
+        "pérdida de peso inexplicada", "bajo de peso sin razón",
+        "adelgazando sin causa", "perdiendo peso sin dieta",
+    ],
+    "infecciones frecuentes": [
+        "infecciones frecuentes", "me enfermo seguido",
+        "infecciones recurrentes", "enfermo constantemente",
+    ],
+    "cicatrización lenta": [
+        "cicatrización lenta", "tardan en sanar las heridas",
+        "las heridas no sanan", "heridas que no cierran",
+    ],
+    "hormigueo en extremidades": [
+        "hormigueo en extremidades", "parestesia en brazos y piernas",
+        "adormecimiento de manos y pies",
+        "se me duermen las manos", "alfilerazos en extremidades",
+    ],
+    "aumento de peso": [
+        "aumento de peso", "subir de peso", "engordar",
+        "estoy engordando", "aumento de peso inexplicable",
+    ],
+    "intolerancia al frío": [
+        "intolerancia al frío", "siento mucho frío",
+        "no aguanto el frío", "siempre tengo frío",
+    ],
+    "piel seca": [
+        "piel seca", "resequedad en la piel", "tengo la piel seca",
+        "descamación", "piel que se pela",
+    ],
+    "caída de cabello": [
+        "caída de cabello", "se me cae el pelo", "alopecia",
+        "pérdida de pelo", "calvicie",
+    ],
+    "estreñimiento": [
+        "estreñimiento", "estrenido", "no puedo ir al baño",
+        "heces duras", "constipación", "dificultad para evacuar",
+    ],
+    "bradicardia": [
+        "bradicardia", "corazón lento", "pulso bajo",
+        "latidos lentos", "frecuencia cardíaca baja",
+    ],
+    "depresión": [
+        "depresión", "tristeza profunda", "melancolía",
+        "no tengo ganas de vivir", "abatimiento",
+    ],
+    "bocio": [
+        "bocio", "coto en el cuello", "bulto en la garganta",
+        "hinchazón en el cuello", "glándula tiroides agrandada",
+    ],
+    "taquicardia": [
+        "taquicardia", "corazón acelerado", "palpitaciones rápidas",
+        "pulso rápido", "latidos muy rápidos",
+    ],
+    "intolerancia al calor": [
+        "intolerancia al calor", "siento mucho calor",
+        "no aguanto el calor", "siempre tengo calor",
+    ],
+    "sudoración excesiva": [
+        "sudoración excesiva", "hiperhidrosis", "sudo demasiado",
+        "transpiración excesiva",
+    ],
+    "nerviosismo": [
+        "nerviosismo", "tenso", "ansioso", "alborotado",
+        "agitado", "intranquilo",
+    ],
+    "temblores": [
+        "temblores", "temblor en las manos", "manos temblorosas",
+        "me tiemblan las manos", "temblor fino",
+    ],
+    "insomnio": [
+        "insomnio", "no puedo dormir", "desvelo",
+        "dificultad para conciliar el sueño",
+        "me despierto mucho en la noche",
+    ],
+    "exoftalmos": [
+        "exoftalmos", "ojos saltones", "ojos saltados",
+        "protrusión ocular", "ojos hacia afuera",
+    ],
+    "fatiga muscular": [
+        "fatiga muscular", "debilidad muscular", "músculos débiles",
+        "no tengo fuerza en los músculos",
+        "debilidad en los brazos y piernas",
+    ],
+    "fotofobia": [
+        "fotofobia", "molestia a la luz", "no soporto la luz",
+        "me molesta la claridad", "intolerancia a la luz",
+    ],
+    "fonofobia": [
+        "fonofobia", "intolerancia al ruido", "me molesta el ruido",
+        "no soporto el ruido",
+    ],
+    "aura visual": [
+        "aura visual", "luces en la visión", "destellos en los ojos",
+        "puntos ciegos", "visión de luces parpadeantes",
+    ],
+    "parestesias": [
+        "parestesias", "hormigueo", "adormecimiento",
+        "alfilerazos", "sensación de hormigueo",
+    ],
+    "debilidad facial unilateral": [
+        "debilidad facial unilateral", "parálisis facial",
+        "se me cae la cara", "boca torcida",
+        "no puedo sonreír de un lado",
+    ],
+    "debilidad en extremidades": [
+        "debilidad en extremidades", "pérdida de fuerza en brazos o piernas",
+        "no puedo mover un brazo", "se me durmió un lado del cuerpo",
+        "parálisis de un brazo",
+    ],
+    "confusión súbita": [
+        "confusión súbita", "desorientación repentina",
+        "me desorienté de repente", "no sé qué pasó",
+    ],
+    "dificultad para hablar": [
+        "dificultad para hablar", "disartria", "no puedo hablar bien",
+        "habla arrastrada", "se me traba la lengua",
+    ],
+    "pérdida de visión": [
+        "pérdida de visión", "ceguera", "no veo",
+        "pérdida visual", "visión perdida",
+    ],
+    "pérdida de equilibrio": [
+        "pérdida de equilibrio", "inestabilidad", "no me puedo sostener",
+        "me caigo", "dificultad para caminar derecho",
+    ],
+    "pérdida de conciencia": [
+        "pérdida de conciencia", "desmayo", "me desvanecí",
+        "perdí el conocimiento", "me desmayé",
+    ],
+    "convulsiones tónico-clónicas": [
+        "convulsiones tónico-clónicas", "crisis convulsiva generalizada",
+        "ataque epiléptico", "gran mal epiléptico",
+    ],
+    "ausencias": [
+        "ausencias", "desconexión breve", "me quedo en blanco",
+        "episodios de mirada perdida", "pequeño mal",
+    ],
+    "movimientos involuntarios": [
+        "movimientos involuntarios", "sacudidas", "tics",
+        "movimientos que no controlo",
+    ],
+    "temblor en reposo": [
+        "temblor en reposo", "temblor cuando estoy quieto",
+        "tiemblo cuando no hago nada",
+    ],
+    "rigidez muscular": [
+        "rigidez muscular", "músculos duros", "tenso muscular",
+        "músculos rígidos", "no me puedo mover bien",
+    ],
+    "bradicinesia": [
+        "bradicinesia", "movimientos lentos", "me muevo lento",
+        "lentitud de movimientos",
+    ],
+    "disfagia": [
+        "disfagia", "dificultad para tragar", "me atoro al comer",
+        "no puedo tragar comida", "disfagia",
+    ],
+    "deterioro cognitivo": [
+        "deterioro cognitivo", "pérdida de memoria", "olvido mucho",
+        "no me acuerdo de las cosas", "demencia",
+        "problemas de memoria",
+    ],
+    "inflamación articular": [
+        "inflamación articular", "articulaciones hinchadas",
+        "rodillas inflamadas", "dedos hinchados",
+    ],
+    "erupción en mariposa facial": [
+        "erupción en mariposa facial", "rash en mariposa en la cara",
+        "mancha en la cara con forma de mariposa",
+        "eritema malar",
+    ],
+    "fotosensibilidad": [
+        "fotosensibilidad", "sensibilidad al sol",
+        "me quemo fácil con el sol", "urticaria solar",
+    ],
+    "úlceras orales": [
+        "úlceras orales", "llagas en la boca", "aftas",
+        "heridas en la boca", "boqueras",
+    ],
+    "artritis": [
+        "artritis", "inflamación en articulaciones",
+        "articulaciones rojas e hinchadas",
+    ],
+    "fenómeno de Raynaud": [
+        "fenómeno de Raynaud", "dedos blancos con el frío",
+        "cambio de color de los dedos con el frío",
+    ],
+    "fiebre cíclica con escalofríos": [
+        "fiebre cíclica con escalofríos", "fiebre que va y viene",
+        "fiebre intermitente", "calentura que regresa",
+    ],
+    "dolor de cabeza intenso": [
+        "dolor de cabeza intenso", "cefalea severa",
+        "dolor de cabeza muy fuerte", "migraña severa",
+    ],
+    "hepatomegalia": [
+        "hepatomegalia", "hígado inflamado", "hígado grande",
+        "hígado agrandado",
+    ],
+    "esplenomegalia": [
+        "esplenomegalia", "bazo inflamado", "bazo grande",
+        "bazo agrandado",
+    ],
+    "sibilancias": [
+        "sibilancias", "silbido al respirar", "pito en el pecho",
+        "silbido en el pecho", "respiración silbante",
+    ],
+    "disnea": [
+        "disnea", "falta de aire", "dificultad para respirar",
+        "me falta el aire",
+    ],
+    "opresión torácica": [
+        "opresión torácica", "presión en el pecho",
+        "pecho apretado", "sensación de opresión",
+    ],
+    "tos seca": [
+        "tos seca", "tos sin flema", "tos sin moco",
+        "tos irritativa", "tos de perro",
+    ],
+    "disfonía o afonía": [
+        "disfonía o afonía", "ronquera", "pérdida de la voz",
+        "voz ronca", "afonía", "no tengo voz",
+    ],
+    "edema": [
+        "edema", "hinchazón", "inflamación",
+        "parte del cuerpo hinchada",
+    ],
+    "dermografismo": [
+        "dermografismo", "ronchas al rascarme",
+        "me salen ronchas al rascar",
+    ],
+    "prurito intenso": [
+        "prurito intenso", "picazón severa", "me pica mucho",
+        "picazón insoportable",
+    ],
+    "edema angioneurótico": [
+        "edema angioneurótico", "hinchazón repentina de labios",
+        "hinchazón de cara", "angioedema",
+    ],
+    "liquenificación": [
+        "liquenificación", "piel engrosada", "piel gruesa",
+        "endurecimiento de la piel",
+    ],
+    "xerosis": [
+        "xerosis", "piel muy seca", "sequedad de la piel",
+        "piel escamosa",
+    ],
+    "dispareunia": [
+        "dispareunia", "dolor al tener relaciones",
+        "dolor durante el coito", "dolor sexual",
+    ],
+    "trastornos del sueño": [
+        "trastornos del sueño", "problemas para dormir",
+        "mal dormir", "sueño interrumpido",
+    ],
+    "síndrome de colon irritable": [
+        "síndrome de colon irritable", "colon irritable",
+        "intestino irritable", "SII",
+    ],
+    "dificultades cognitivas": [
+        "dificultades cognitivas", "niebla mental",
+        "problemas de concentración", "no puedo concentrarme",
+        "mente nublada",
+    ],
 }
 
 # ── Semantic word index for automatic relationship ──────────────
@@ -277,8 +759,42 @@ WORD_INDEX: dict[str, list[str]] = {
     "debilidad": ["fatiga", "deshidratación", "pérdida de peso"],
     "energia": ["fatiga", "pérdida de apetito"],
     "fuerza": ["fatiga", "debilidad"],
-    "sudor": ["sudoración nocturna", "fiebre", "escalofríos"],
+    "sudor": ["sudoración nocturna", "fiebre", "escalofríos", "sudoración profusa", "sudoración excesiva"],
     "noche": ["sudoración nocturna", "tos"],
+    "corazon": ["palpitaciones", "taquicardia", "bradicardia", "dolor en el pecho", "dolor torácico opresivo"],
+    "pierna": ["edema en piernas", "dolor muscular", "debilidad en extremidades"],
+    "mano": ["temblores", "temblor en reposo", "parestesias", "hormigueo en extremidades", "fenómeno de Raynaud"],
+    "brazo": ["dolor muscular", "debilidad en extremidades", "dolor irradiado a brazo izquierdo"],
+    "pecho": ["dolor en el pecho", "dolor torácico opresivo", "disnea", "dificultad para respirar", "tos", "tos con sangre", "opresión torácica", "sibilancias"],
+    "respirar": ["dificultad para respirar", "disnea", "disnea de esfuerzo", "ortopnea", "sibilancias", "taquipnea"],
+    "traga": ["dificultad para tragar", "disfagia", "dolor de garganta", "odinofagia"],
+    "tragar": ["dificultad para tragar", "disfagia"],
+    "cuello": ["rigidez de cuello", "dolor muscular", "dolor de cabeza", "adenopatías cervicales", "bocio"],
+    "cara": ["debilidad facial unilateral", "enrojecimiento facial", "erupción en mariposa facial", "edema angioneurótico"],
+    "ojo": ["ojos rojos", "dolor detrás de los ojos", "sensibilidad a la luz", "visión borrosa", "exoftalmos", "fotofobia", "ojo rojo", "lagrimeo", "pérdida de visión"],
+    "boca": ["úlceras orales", "dificultad para hablar", "debilidad facial unilateral", "dolor de garganta"],
+    "lengua": ["dificultad para hablar", "mordedura de lengua"],
+    "vista": ["visión borrosa", "pérdida de visión", "aura visual"],
+    "hablar": ["dificultad para hablar"],
+    "caminar": ["marcha inestable", "pérdida de equilibrio", "marcha arrastrada", "debilidad en extremidades"],
+    "caer": ["pérdida de equilibrio", "síncope", "mareos", "vértigo"],
+    "hambre": ["pérdida de apetito", "náuseas", "polifagia"],
+    "comida": ["pérdida de apetito", "náuseas", "vómito", "dolor abdominal"],
+    "dormir": ["insomnio", "trastornos del sueño", "sudoración nocturna", "tos nocturna", "ortopnea"],
+    "sueno": ["insomnio", "trastornos del sueño", "letargo", "fatiga"],
+    "debilidad": ["fatiga", "deshidratación", "pérdida de peso", "debilidad en extremidades", "debilidad facial unilateral", "fatiga muscular", "fatiga extrema"],
+    "fuerza": ["fatiga", "debilidad", "fatiga muscular"],
+    "pies": ["edema en piernas", "hormigueo en extremidades", "parestesias"],
+    "memoria": ["deterioro cognitivo", "confusión", "dificultades cognitivas"],
+    "concentrar": ["dificultades cognitivas", "confusión"],
+    "orinar": ["ardor al orinar", "frecuencia urinaria", "urgencia urinaria", "poliuria", "disuria", "dolor al llenar la vejiga"],
+    "pipi": ["ardor al orinar", "frecuencia urinaria", "orina turbia", "orina maloliente", "hematuria"],
+    "hígado": ["hepatomegalia", "ictericia", "dolor en hipocondrio derecho"],
+    "higado": ["hepatomegalia", "ictericia", "dolor en hipocondrio derecho"],
+    "vesicula": ["dolor en hipocondrio derecho", "signo de Murphy", "ictericia leve"],
+    "apendice": ["dolor abdominal periumbilical que migra a fosa ilíaca derecha", "dolor abdominal"],
+    "costado": ["dolor lumbar", "dolor en hipocondrio derecho", "cólico nefrítico"],
+    "cintura": ["dolor lumbar", "dolor abdominal"],
 }
 
 # Stop-words to ignore during decomposition

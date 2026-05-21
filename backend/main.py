@@ -8,16 +8,24 @@ from app.routes import diagnosis, knowledge, converse, patient, report, auth, cl
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
+EXPECTED_DISEASES = 50
+
 async def auto_seed():
     db = get_db()
     if db is None:
         return
     existing = await db.diseases.count_documents({})
-    if existing > 0:
-        print("Database already seeded")
+    if existing == EXPECTED_DISEASES:
+        print(f"Database already seeded ({existing} diseases)")
         return
-    print("Seeding database...")
+    print(f"Database has {existing} diseases; re-seeding to {EXPECTED_DISEASES}...")
     from seed_data import symptoms, diseases, treatments
+    for coll_name in ("symptoms", "diseases", "treatments"):
+        coll = db[coll_name]
+        existing_count = await coll.count_documents({})
+        if existing_count > 0:
+            await coll.drop()
+            print(f"  Dropped {coll_name} ({existing_count} old docs)")
     if symptoms:
         await db.symptoms.insert_many(symptoms)
         print(f"  Inserted {len(symptoms)} symptoms")
