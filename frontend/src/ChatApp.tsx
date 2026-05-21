@@ -534,7 +534,7 @@ export default function ChatApp() {
                 ref={searchRef}
                 type="text"
                 className="search-input"
-                placeholder="Ej: 1104938289"
+                placeholder="Ingrese el documento de identidad"
                 value={searchQuery}
                 onChange={e => handleSearchChange(e.target.value)}
                 onFocus={() => searchResults.length > 0 && setShowSearchResults(true)}
