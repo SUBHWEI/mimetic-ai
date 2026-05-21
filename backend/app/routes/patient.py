@@ -29,10 +29,10 @@ PATIENT_FIELD_GROUPS = [
     {
         "section": "Antecedentes Personales",
         "fields": [
-            {"key": "tobacco", "label": "Consumo de tabaco"},
-            {"key": "alcohol", "label": "Consumo de alcohol"},
-            {"key": "substances", "label": "Uso de sustancias"},
-            {"key": "physical_activity", "label": "Actividad física"},
+            {"key": "tobacco", "label": "Consumo de tabaco en los últimos 3 meses"},
+            {"key": "alcohol", "label": "Consumo de alcohol en el último mes"},
+            {"key": "substances", "label": "Uso de sustancias en el último año"},
+            {"key": "physical_activity", "label": "Actividad física en el último mes"},
             {"key": "medical_history", "label": "Antecedentes médicos"},
             {"key": "surgical_history", "label": "Antecedentes quirúrgicos"},
             {"key": "pharmacological_history", "label": "Antecedentes farmacológicos"},

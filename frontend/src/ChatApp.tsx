@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from './context/AuthContext'
 import './App.css'
 
@@ -29,6 +29,8 @@ type Treatment = {
 }
 
 type PatientInfo = {
+  first_name?: string
+  last_name?: string
   name?: string
   document_type?: string
   id_document?: string
@@ -38,6 +40,9 @@ type PatientInfo = {
   occupation?: string
   phone?: string
   location?: string
+  country?: string
+  department?: string
+  city?: string
   consultation_reason?: string
   symptom_evolution?: string
   tobacco?: string
@@ -65,86 +70,120 @@ type FieldConfig = {
   suffix?: string
 }
 
-const FIELD_GROUPS: { title: string; fields: FieldConfig[] }[] = [
-  {
-    title: 'Identificación del Paciente',
-    fields: [
-      { key: 'name', label: 'Nombre completo', placeholder: 'Ej: Juan Pérez' },
-      { key: 'document_type', label: 'Tipo de documento', type: 'select', options: [
-        { value: 'CC', label: 'Cédula de Ciudadanía (CC)' },
-        { value: 'TI', label: 'Tarjeta de Identidad (TI)' },
-        { value: 'CE', label: 'Cédula de Extranjería (CE)' },
-        { value: 'RC', label: 'Registro Civil (RC)' },
-      ]},
-      { key: 'id_document', label: 'Número de documento', placeholder: 'Ej: 123456789' },
-      { key: 'birth_date', label: 'Fecha de nacimiento', placeholder: 'DD/MM/AAAA' },
-      { key: 'age', label: 'Edad', placeholder: 'Ej: 45', suffix: 'años' },
-      { key: 'gender', label: 'Género', type: 'select', options: [
-        { value: 'M', label: 'Masculino' },
-        { value: 'F', label: 'Femenino' },
-        { value: 'Otro', label: 'Otro' },
-      ]},
-      { key: 'occupation', label: 'Ocupación', placeholder: 'Ej: Ingeniero' },
-      { key: 'phone', label: 'Teléfono', placeholder: 'Ej: 3001234567' },
-      { key: 'location', label: 'Ciudad de residencia', placeholder: 'Ej: Bogotá' },
-    ],
-  },
-  {
-    title: 'Anamnesis',
-    fields: [
-      { key: 'consultation_reason', label: 'Motivo de consulta', placeholder: 'Describe brevemente el motivo' },
-      { key: 'symptom_evolution', label: 'Tiempo de evolución', placeholder: 'Ej: 3 días', suffix: 'días/semanas' },
-    ],
-  },
-  {
-    title: 'Antecedentes Personales',
-    fields: [
-      { key: 'tobacco', label: 'Consumo de tabaco', placeholder: 'Sí / No / Frecuencia' },
-      { key: 'alcohol', label: 'Consumo de alcohol', placeholder: 'Sí / No / Frecuencia' },
-      { key: 'substances', label: 'Uso de sustancias', placeholder: 'Sí / No / Especificar' },
-      { key: 'physical_activity', label: 'Actividad física', type: 'select', options: [
-        { value: 'Activo', label: 'Activo (ejercicio regular)' },
-        { value: 'Sedentario', label: 'Sedentario (poco o ningún ejercicio)' },
-      ]},
-      { key: 'medical_history', label: 'Antecedentes médicos', placeholder: 'Diabetes, HTA, etc.' },
-      { key: 'surgical_history', label: 'Antecedentes quirúrgicos', placeholder: 'Cirugías previas' },
-      { key: 'pharmacological_history', label: 'Antecedentes farmacológicos', placeholder: 'Medicamentos actuales' },
-      { key: 'allergies', label: 'Alergias conocidas', placeholder: 'Medicamentos, alimentos, etc.' },
-    ],
-  },
-  {
-    title: 'Signos Vitales',
-    fields: [
-      { key: 'blood_pressure', label: 'Presión arterial (PA)', placeholder: 'Ej: 120/80', suffix: 'mmHg' },
-      { key: 'heart_rate', label: 'Frecuencia cardíaca (FC)', placeholder: 'Ej: 72', suffix: 'lpm' },
-      { key: 'respiratory_rate', label: 'Frecuencia respiratoria (FR)', placeholder: 'Ej: 16', suffix: 'rpm' },
-      { key: 'temperature', label: 'Temperatura', placeholder: 'Ej: 36.5', suffix: '°C' },
-      { key: 'weight', label: 'Peso', placeholder: 'Ej: 70', suffix: 'kg' },
-      { key: 'height', label: 'Estatura', placeholder: 'Ej: 170', suffix: 'cm' },
-    ],
-  },
+type SearchResult = {
+  document_number: string
+  first_name: string
+  last_name: string
+  document_type: string
+  source: string
+  has_clinical_history: boolean
+  has_user_account: boolean
+  base_data: Record<string, string>
+}
+
+type Phase = 'search' | 'patient_info' | 'symptoms' | 'report'
+type PatientInfoMode = 'full' | 'session_only'
+
+const IDENTIFICATION_FIELDS: FieldConfig[] = [
+  { key: 'first_name', label: 'Nombres', placeholder: 'Ej: Juan Andrés' },
+  { key: 'last_name', label: 'Apellidos', placeholder: 'Ej: Pérez García' },
+  { key: 'document_type', label: 'Tipo de documento', type: 'select', options: [
+    { value: 'CC', label: 'Cédula de Ciudadanía (CC)' },
+    { value: 'TI', label: 'Tarjeta de Identidad (TI)' },
+    { value: 'CE', label: 'Cédula de Extranjería (CE)' },
+    { value: 'RC', label: 'Registro Civil (RC)' },
+    { value: 'Pasaporte', label: 'Pasaporte' },
+  ]},
+  { key: 'id_document', label: 'Número de documento', placeholder: 'Ej: 123456789' },
+  { key: 'birth_date', label: 'Fecha de nacimiento', placeholder: 'DD/MM/AAAA' },
+  { key: 'age', label: 'Edad', placeholder: 'Ej: 45', suffix: 'años' },
+  { key: 'gender', label: 'Género', type: 'select', options: [
+    { value: 'M', label: 'Masculino' },
+    { value: 'F', label: 'Femenino' },
+    { value: 'Otro', label: 'Otro' },
+  ]},
+  { key: 'occupation', label: 'Ocupación', placeholder: 'Ej: Ingeniero' },
+  { key: 'phone', label: 'Teléfono', placeholder: 'Ej: 3001234567' },
+  { key: 'country', label: 'País', placeholder: 'Ej: Colombia' },
+  { key: 'department', label: 'Departamento', placeholder: 'Ej: Cundinamarca' },
+  { key: 'city', label: 'Ciudad de residencia', placeholder: 'Ej: Bogotá' },
+]
+
+const ANAMNESIS_FIELDS: FieldConfig[] = [
+  { key: 'consultation_reason', label: 'Motivo de consulta', placeholder: 'Describe brevemente el motivo' },
+  { key: 'symptom_evolution', label: 'Tiempo de evolución', placeholder: 'Ej: 3 días', suffix: 'días/semanas' },
+]
+
+const ANTECEDENTES_FIELDS: FieldConfig[] = [
+  { key: 'tobacco', label: 'Consumo de tabaco en los últimos 3 meses', placeholder: 'Ej: No ha fumado, Fuma ocasionalmente, Fuma a diario' },
+  { key: 'alcohol', label: 'Consumo de alcohol en el último mes', placeholder: 'Ej: No consume, 1-2 veces/semana, A diario' },
+  { key: 'substances', label: 'Uso de sustancias en el último año', placeholder: 'Ej: Ninguna, Cannabis, Ocasionalmente' },
+  { key: 'physical_activity', label: 'Actividad física en el último mes', type: 'select', options: [
+    { value: 'Sedentario', label: 'Sedentario (poco o ningún ejercicio)' },
+    { value: '1-2 veces/semana', label: '1-2 veces por semana' },
+    { value: '3+ veces/semana', label: '3 o más veces por semana' },
+    { value: 'Diario', label: 'Ejercicio diario' },
+  ]},
+  { key: 'medical_history', label: 'Antecedentes médicos', placeholder: 'Diabetes, HTA, etc.' },
+  { key: 'surgical_history', label: 'Antecedentes quirúrgicos', placeholder: 'Cirugías previas' },
+  { key: 'pharmacological_history', label: 'Antecedentes farmacológicos', placeholder: 'Medicamentos actuales' },
+  { key: 'allergies', label: 'Alergias conocidas', placeholder: 'Medicamentos, alimentos, etc.' },
+]
+
+const SIGNOS_FIELDS: FieldConfig[] = [
+  { key: 'blood_pressure', label: 'Presión arterial (PA)', placeholder: 'Ej: 120/80', suffix: 'mmHg' },
+  { key: 'heart_rate', label: 'Frecuencia cardíaca (FC)', placeholder: 'Ej: 72', suffix: 'lpm' },
+  { key: 'respiratory_rate', label: 'Frecuencia respiratoria (FR)', placeholder: 'Ej: 16', suffix: 'rpm' },
+  { key: 'temperature', label: 'Temperatura', placeholder: 'Ej: 36.5', suffix: '°C' },
+  { key: 'weight', label: 'Peso', placeholder: 'Ej: 70', suffix: 'kg' },
+  { key: 'height', label: 'Estatura', placeholder: 'Ej: 170', suffix: 'cm' },
+]
+
+const FULL_GROUPS = [
+  { title: 'Identificación del Paciente', fields: IDENTIFICATION_FIELDS },
+  { title: 'Anamnesis', fields: ANAMNESIS_FIELDS },
+  { title: 'Antecedentes Personales', fields: ANTECEDENTES_FIELDS },
+  { title: 'Signos Vitales', fields: SIGNOS_FIELDS },
+]
+
+const SESSION_GROUPS = [
+  { title: 'Anamnesis', fields: ANAMNESIS_FIELDS },
+  { title: 'Antecedentes Personales', fields: ANTECEDENTES_FIELDS },
+  { title: 'Signos Vitales', fields: SIGNOS_FIELDS },
 ]
 
 export default function ChatApp() {
-  const { user, logout } = useAuth()
+  const { user, token: authToken, logout } = useAuth()
+  const token = authToken || ''
+
+  const [phase, setPhase] = useState<Phase>('search')
+  const [patientInfoMode, setPatientInfoMode] = useState<PatientInfoMode>('full')
   const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '0',
-      role: 'assistant',
-      text: 'Hola, soy Mimetic AI. Antes de comenzar, necesito los datos del paciente.',
-    },
+    { id: '0', role: 'assistant', text: 'Hola, soy Mimetic AI. Antes de comenzar, necesito los datos del paciente.' },
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [currentSymptoms, setCurrentSymptoms] = useState<string[]>([])
   const [patientInfo, setPatientInfo] = useState<PatientInfo>({})
-  const [phase, setPhase] = useState<'patient_info' | 'symptoms' | 'report'>('patient_info')
-  const allFieldKeys = FIELD_GROUPS.flatMap(g => g.fields.map(f => f.key))
-  const [_missingFields, setMissingFields] = useState<string[]>(allFieldKeys)
+  const allFieldKeys = FULL_GROUPS.flatMap(g => g.fields.map(f => f.key))
+  const sessionFieldKeys = SESSION_GROUPS.flatMap(g => g.fields.map(f => f.key))
   const [reportHtml, setReportHtml] = useState<string | null>(null)
   const [formStep, setFormStep] = useState(0)
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [selectedDocument, setSelectedDocument] = useState<string>('')
   const endRef = useRef<HTMLDivElement>(null)
+  const sectionRefs = useRef<(HTMLDivElement | null)[]>([])
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [showSearchResults, setShowSearchResults] = useState(false)
+  const [searching, setSearching] = useState(false)
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const fieldGroups = patientInfoMode === 'full' ? FULL_GROUPS : SESSION_GROUPS
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -160,37 +199,200 @@ export default function ChatApp() {
     }
   }, [formStep, phase])
 
-  const sectionRefs = useRef<(HTMLDivElement | null)[]>([])
+  useEffect(() => {
+    if (phase === 'search' && searchRef.current) {
+      searchRef.current.focus()
+    }
+  }, [phase])
 
-  const handlePatientFieldChange = (key: string, value: string) => {
-    setPatientInfo(prev => ({ ...prev, [key]: value }))
-  }
-
-  const submitPatientInfo = async () => {
-    setLoading(true)
+  const doSearch = useCallback(async (q: string) => {
+    if (!q || q.length < 1) {
+      setSearchResults([])
+      setShowSearchResults(false)
+      return
+    }
+    setSearching(true)
     try {
-      const res = await fetch(API + '/api/patient', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patient_info: patientInfo }),
+      const res = await fetch(`${API}/api/clinical-history/search?q=${encodeURIComponent(q)}`, {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      const data = await res.json()
-
-      setPatientInfo(data.patient_info)
-      setMissingFields(data.missing_fields)
-
-      const msg: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        text: data.reply,
-      }
-      setMessages(m => [...m, msg])
-
-      if (data.complete) {
-        setPhase('symptoms')
+      if (res.ok) {
+        const data: SearchResult[] = await res.json()
+        setSearchResults(data)
+        setShowSearchResults(true)
       }
     } catch {
-      setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: 'Error de conexión.' }])
+      // silent
+    }
+    setSearching(false)
+  }, [token])
+
+  const handleSearchChange = (value: string) => {
+    const digits = value.replace(/\D/g, '')
+    setSearchQuery(digits)
+    setShowSearchResults(true)
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => doSearch(digits), 200)
+  }
+
+  const selectPatient = async (result: SearchResult) => {
+    setShowSearchResults(false)
+    setSelectedDocument(result.document_number)
+    setSearchQuery(`${result.document_number} — ${result.first_name} ${result.last_name}`)
+
+    if (result.has_clinical_history) {
+      setPatientInfoMode('session_only')
+      const base = result.base_data
+      setPatientInfo({
+        first_name: base.first_name || result.first_name,
+        last_name: base.last_name || result.last_name,
+        name: `${base.first_name || result.first_name} ${base.last_name || result.last_name}`.trim(),
+        document_type: base.document_type || result.document_type,
+        id_document: result.document_number,
+        birth_date: base.birth_date || '',
+        age: base.age || '',
+        gender: base.gender || '',
+        phone: base.phone || '',
+        country: base.country || '',
+        department: base.department || '',
+        city: base.city || '',
+        location: base.city || '',
+      })
+      setPhase('patient_info')
+      setFormStep(0)
+    } else if (result.has_user_account) {
+      setPatientInfoMode('full')
+      const base = result.base_data
+      setPatientInfo({
+        first_name: base.first_name || result.first_name,
+        last_name: base.last_name || result.last_name,
+        name: `${base.first_name || result.first_name} ${base.last_name || result.last_name}`.trim(),
+        document_type: base.document_type || result.document_type,
+        id_document: result.document_number,
+        birth_date: base.birth_date || '',
+        age: '',
+        gender: '',
+        occupation: '',
+        phone: base.phone || '',
+        country: base.country || '',
+        department: base.department || '',
+        city: base.city || '',
+        location: base.city || '',
+      })
+      setPhase('patient_info')
+      setFormStep(0)
+    }
+  }
+
+  const startNewPatient = () => {
+    setPatientInfoMode('full')
+    setSelectedDocument('')
+    setPatientInfo({})
+    setSearchQuery('')
+    setShowSearchResults(false)
+    setPhase('patient_info')
+    setFormStep(0)
+  }
+
+  const handlePatientFieldChange = (key: string, value: string) => {
+    setPatientInfo(prev => {
+      const updated = { ...prev, [key]: value }
+      if (key === 'first_name' || key === 'last_name') {
+        updated.name = `${updated.first_name || ''} ${updated.last_name || ''}`.trim()
+      }
+      if (key === 'city') {
+        updated.location = value
+      }
+      return updated
+    })
+  }
+
+  const submitPatientForm = async () => {
+    setLoading(true)
+    try {
+      const docNum = patientInfo.id_document || selectedDocument
+      if (!docNum) throw new Error('Número de documento requerido')
+
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      }
+
+      let currentSessionId: string | null = null
+
+      if (patientInfoMode === 'full') {
+        // Create clinical history
+        const histBody = {
+          document_number: docNum,
+          document_type: patientInfo.document_type || 'CC',
+          first_name: patientInfo.first_name || '',
+          last_name: patientInfo.last_name || '',
+          birth_date: patientInfo.birth_date || '',
+          age: patientInfo.age || '',
+          gender: patientInfo.gender || '',
+          occupation: patientInfo.occupation || '',
+          phone: patientInfo.phone || '',
+          country: patientInfo.country || '',
+          department: patientInfo.department || '',
+          city: patientInfo.city || '',
+        }
+
+        const histRes = await fetch(`${API}/api/clinical-history`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(histBody),
+        })
+
+        if (!histRes.ok) {
+          const errData = await histRes.json().catch(() => ({}))
+          throw new Error(errData.detail || 'Error al crear historia clínica')
+        }
+      }
+
+      // Create session
+      const sessBody: Record<string, string> = {
+        consultation_reason: patientInfo.consultation_reason || '',
+        symptom_evolution: patientInfo.symptom_evolution || '',
+        tobacco: patientInfo.tobacco || '',
+        alcohol: patientInfo.alcohol || '',
+        substances: patientInfo.substances || '',
+        physical_activity: patientInfo.physical_activity || '',
+        medical_history: patientInfo.medical_history || '',
+        surgical_history: patientInfo.surgical_history || '',
+        pharmacological_history: patientInfo.pharmacological_history || '',
+        allergies: patientInfo.allergies || '',
+        blood_pressure: patientInfo.blood_pressure || '',
+        heart_rate: patientInfo.heart_rate || '',
+        respiratory_rate: patientInfo.respiratory_rate || '',
+        temperature: patientInfo.temperature || '',
+        weight: patientInfo.weight || '',
+        height: patientInfo.height || '',
+      }
+
+      const sessRes = await fetch(`${API}/api/clinical-history/${docNum}/sessions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(sessBody),
+      })
+
+      if (!sessRes.ok) {
+        const errData = await sessRes.json().catch(() => ({}))
+        throw new Error(errData.detail || 'Error al crear sesión')
+      }
+
+      const sessData = await sessRes.json()
+      currentSessionId = sessData.id
+      setSessionId(currentSessionId)
+
+      setMessages(m => [...m, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        text: 'Paciente registrado correctamente. Ahora describe los síntomas que presenta.',
+      }])
+
+      setPhase('symptoms')
+    } catch (err: any) {
+      setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: `Error: ${err.message}` }])
     }
     setLoading(false)
   }
@@ -257,6 +459,8 @@ export default function ChatApp() {
           patient_info: patientInfo,
           symptoms: currentSymptoms,
           selected_diagnosis: selectedDiagnosis,
+          session_id: sessionId,
+          document_number: patientInfo.id_document || selectedDocument,
         }),
       })
       const data = await res.json()
@@ -266,6 +470,24 @@ export default function ChatApp() {
       setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: 'Error generando el reporte.' }])
     }
     setLoading(false)
+  }
+
+  const resetAll = () => {
+    setPhase('search')
+    setPatientInfoMode('full')
+    setFormStep(0)
+    setReportHtml(null)
+    setCurrentSymptoms([])
+    setPatientInfo({})
+    setSelectedDiagnosis(null)
+    setSessionId(null)
+    setSelectedDocument('')
+    setSearchQuery('')
+    setSearchResults([])
+    setShowSearchResults(false)
+    setMessages([
+      { id: '0', role: 'assistant', text: 'Hola, soy Mimetic AI. Antes de comenzar, necesito los datos del paciente.' },
+    ])
   }
 
   const confidenceColor = (c: number) => {
@@ -288,23 +510,106 @@ export default function ChatApp() {
     .flatMap((m) => m.suggestions || [])
     .filter((s, i, arr) => arr.indexOf(s) === i)
 
-  // Patient info form
-  if (phase === 'patient_info') {
-    const filledCount = Object.values(patientInfo).filter(v => v?.toString().trim()).length
-    const progress = Math.round((filledCount / allFieldKeys.length) * 100)
-    const sectionIcons = ['📋', '💬', '📄', '🩺']
-    const visibleGroup = FIELD_GROUPS[formStep]
+  // ── SEARCH PHASE ────────────────────────────────────────────────
 
+  if (phase === 'search') {
     return (
       <div className="app">
         <header className="header">
           <img src="/logo.png" alt="Mimetic AI" className="header-logo-lg" />
-          <span className="subtitle">Datos del paciente</span>
+          <span className="subtitle">Buscar paciente</span>
           <div className="header-right">
             <span className="user-badge">{user?.name}</span>
             <button className="logout-btn" onClick={logout}>Cerrar sesión</button>
           </div>
         </header>
+
+        <div className="chat">
+          <div className="search-section">
+            <h3>Buscar paciente por número de documento</h3>
+            <p className="search-hint">Escribe el número de documento para buscar coincidencias</p>
+
+            <div className="search-input-wrap">
+              <input
+                ref={searchRef}
+                type="text"
+                className="search-input"
+                placeholder="Ej: 1104938289"
+                value={searchQuery}
+                onChange={e => handleSearchChange(e.target.value)}
+                onFocus={() => searchResults.length > 0 && setShowSearchResults(true)}
+                onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
+              />
+              {searching && <span className="search-spinner" />}
+            </div>
+
+            {showSearchResults && searchResults.length > 0 && (
+              <div className="search-results">
+                {searchResults.map((r) => (
+                  <div
+                    key={r.document_number}
+                    className="search-result-item"
+                    onMouseDown={() => selectPatient(r)}
+                  >
+                    <div className="search-result-info">
+                      <span className="search-result-name">
+                        {r.first_name} {r.last_name}
+                      </span>
+                      <span className="search-result-doc">{r.document_number}</span>
+                    </div>
+                    <div className="search-result-badges">
+                      {r.has_clinical_history && <span className="badge badge-history">Historia Clínica</span>}
+                      {r.has_user_account && <span className="badge badge-user">Cuenta Pública</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {showSearchResults && searchResults.length === 0 && searchQuery.length >= 1 && !searching && (
+              <div className="search-no-results">
+                <p>No se encontraron pacientes con ese documento.</p>
+              </div>
+            )}
+
+            <div className="search-no-results" style={{ paddingTop: searchQuery ? '0.5rem' : '1rem' }}>
+              <button className="patient-submit" onClick={startNewPatient}>
+                + Registrar nuevo paciente
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── PATIENT INFO PHASE ──────────────────────────────────────────
+
+  if (phase === 'patient_info') {
+    const filledCount = Object.values(patientInfo).filter(v => v?.toString().trim()).length
+    const totalKeys = patientInfoMode === 'full' ? allFieldKeys.length : sessionFieldKeys.length
+    const progress = Math.round((filledCount / totalKeys) * 100)
+    const sectionIcons = ['📋', '💬', '📄', '🩺']
+    const visibleGroup = fieldGroups[formStep]
+
+    return (
+      <div className="app">
+        <header className="header">
+          <img src="/logo.png" alt="Mimetic AI" className="header-logo-lg" />
+          <span className="subtitle">
+            {patientInfoMode === 'session_only' ? 'Nueva consulta — Datos de la sesión' : 'Datos del paciente'}
+          </span>
+          <div className="header-right">
+            <span className="user-badge">{user?.name}</span>
+            <button className="logout-btn" onClick={logout}>Cerrar sesión</button>
+          </div>
+        </header>
+
+        {patientInfoMode === 'session_only' && (
+          <div className="patient-bar">
+            <strong>Paciente:</strong> {patientInfo.name || '—'} | {patientInfo.id_document || ''} {patientInfo.age ? `| ${patientInfo.age} años` : ''}
+          </div>
+        )}
 
         <div className="chat">
           {messages.map((msg) => (
@@ -318,8 +623,8 @@ export default function ChatApp() {
 
           <div className="patient-form">
             <div className="patient-form-header">
-              <h3>Registro del Paciente</h3>
-              <span className="patient-step-count">{formStep + 1} / {FIELD_GROUPS.length}</span>
+              <h3>{patientInfoMode === 'session_only' ? 'Datos de la Consulta' : 'Registro del Paciente'}</h3>
+              <span className="patient-step-count">{formStep + 1} / {fieldGroups.length}</span>
             </div>
 
             <div className="patient-progress-bar">
@@ -327,11 +632,16 @@ export default function ChatApp() {
             </div>
 
             <div className="patient-steps">
-              {FIELD_GROUPS.map((group, gi) => {
+              {fieldGroups.map((group, gi) => {
                 const isActive = gi === formStep
                 const isDone = group.fields.every(f => patientInfo[f.key as keyof PatientInfo]?.trim())
                 return (
-                  <div key={gi} className={`patient-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`} onClick={() => gi <= formStep + 1 && setFormStep(gi)} style={gi <= formStep + 1 ? { cursor: 'pointer' } : {}}>
+                  <div
+                    key={gi}
+                    className={`patient-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`}
+                    onClick={() => gi <= formStep + 1 && setFormStep(gi)}
+                    style={gi <= formStep + 1 ? { cursor: 'pointer' } : {}}
+                  >
                     <div className={`patient-step-num ${isDone ? 'done' : ''}`}>
                       {isDone ? '✓' : sectionIcons[gi]}
                     </div>
@@ -398,22 +708,21 @@ export default function ChatApp() {
                   ← Anterior
                 </button>
               )}
-              {formStep < FIELD_GROUPS.length - 1 && (
+              {formStep < fieldGroups.length - 1 && (
                 <button
                   className="patient-nav-btn primary"
-                  onClick={() => setFormStep(s => Math.min(s + 1, FIELD_GROUPS.length - 1))}
+                  onClick={() => setFormStep(s => Math.min(s + 1, fieldGroups.length - 1))}
                 >
                   Siguiente →
                 </button>
               )}
             </div>
 
-            {/* Summary + Submit at the bottom */}
-            {formStep === FIELD_GROUPS.length - 1 && (
+            {formStep === fieldGroups.length - 1 && (
               <div className="patient-summary">
-                <h4 className="patient-section-title">📋 Resumen del Paciente</h4>
+                <h4 className="patient-section-title">📋 Resumen</h4>
                 <div className="patient-summary-grid">
-                  {FIELD_GROUPS.map((g, gi) => (
+                  {fieldGroups.map((g, gi) => (
                     <div key={gi} className="patient-summary-group">
                       <strong>{g.title}</strong>
                       {g.fields.map(f => {
@@ -426,10 +735,10 @@ export default function ChatApp() {
                 </div>
                 <button
                   className="patient-submit"
-                  onClick={submitPatientInfo}
+                  onClick={submitPatientForm}
                   disabled={loading}
                 >
-                  {loading ? 'Registrando...' : '✓ Finalizar y comenzar consulta'}
+                  {loading ? 'Guardando...' : '✓ Finalizar y comenzar consulta'}
                 </button>
               </div>
             )}
@@ -441,7 +750,8 @@ export default function ChatApp() {
     )
   }
 
-  // Report view
+  // ── REPORT PHASE ────────────────────────────────────────────────
+
   if (phase === 'report' && reportHtml) {
     return (
       <div className="app">
@@ -466,9 +776,7 @@ export default function ChatApp() {
           <button onClick={() => { setPhase('symptoms'); setReportHtml(null) }}>
             Volver al diagnóstico
           </button>
-          <button onClick={() => { setPhase('patient_info'); setFormStep(0); setReportHtml(null); setCurrentSymptoms([]); setPatientInfo({}); setSelectedDiagnosis(null); setMissingFields(FIELD_GROUPS.flatMap(g => g.fields.map(f => f.key))); setMessages([
-            { id: '0', role: 'assistant', text: 'Hola, soy Mimetic AI. Antes de comenzar, necesito los datos del paciente.' },
-          ]) }}>
+          <button onClick={resetAll}>
             Nueva consulta
           </button>
         </div>
@@ -476,7 +784,8 @@ export default function ChatApp() {
     )
   }
 
-  // Main chat (symptoms phase)
+  // ── SYMPTOMS PHASE ──────────────────────────────────────────────
+
   return (
     <div className="app">
       <header className="header">
@@ -488,10 +797,9 @@ export default function ChatApp() {
         </div>
       </header>
 
-      {/* Patient info sidebar */}
       {Object.keys(patientInfo).length > 0 && (
         <div className="patient-bar">
-          <strong>Paciente:</strong> {patientInfo.name || '—'} | {patientInfo.age ? `${patientInfo.age} años` : ''} {patientInfo.weight ? `| ${patientInfo.weight} kg` : ''} {patientInfo.height ? `| ${patientInfo.height} cm` : ''}
+          <strong>Paciente:</strong> {patientInfo.name || '—'} | {patientInfo.id_document || ''} {patientInfo.age ? `| ${patientInfo.age} años` : ''} {patientInfo.weight ? `| ${patientInfo.weight} kg` : ''} {patientInfo.height ? `| ${patientInfo.height} cm` : ''}
         </div>
       )}
 
@@ -610,7 +918,6 @@ export default function ChatApp() {
         </div>
       )}
 
-      {/* Report button when a diagnosis is selected and treatment shown */}
       {selectedDiagnosis && (
         <div className="report-bar">
           <button className="generate-report-btn" onClick={generateReport} disabled={loading}>
@@ -624,7 +931,7 @@ export default function ChatApp() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder={phase === 'symptoms' ? "Describe el síntoma..." : "Escribe un mensaje..."}
+          placeholder="Describe el síntoma..."
           disabled={loading}
         />
         <button onClick={() => handleSend()} disabled={loading || !input.trim()}>

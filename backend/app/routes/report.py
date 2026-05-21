@@ -1,6 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing import Optional
+from bson import ObjectId
 from app.expert_system.engine import diagnose, get_treatment
+from app.database.mongodb import get_db
 from datetime import datetime
 
 router = APIRouter()
@@ -10,6 +13,8 @@ class ReportRequest(BaseModel):
     patient_info: dict
     symptoms: list[str]
     selected_diagnosis: str | None = None
+    session_id: Optional[str] = None
+    document_number: Optional[str] = None
 
 
 class ReportResponse(BaseModel):
@@ -332,6 +337,30 @@ Temp: {val(pi, "temperature")} | Peso: {val(pi, "weight")} | Estatura: {val(pi, 
             text += f"\n--- 8. Recomendaciones ---\n{tx['general_recommendations']}\n"
 
     text += "\n=== Fin del Reporte ==="
+
+    # Persist session data if session_id and document_number provided
+    if request.session_id and request.document_number:
+        db = get_db()
+        if db is not None:
+            update = {"symptoms": request.symptoms}
+            if results:
+                update["diagnoses"] = results
+            if tx:
+                update["treatment"] = tx
+            if html_report:
+                update["report_html"] = html_report
+
+            try:
+                await db.sessions.update_one(
+                    {"_id": ObjectId(request.session_id), "document_number": request.document_number},
+                    {"$set": update},
+                )
+                await db.clinical_histories.update_one(
+                    {"document_number": request.document_number},
+                    {"$set": {"updated_at": datetime.utcnow()}},
+                )
+            except Exception:
+                pass  # Non-critical: report still returns
 
     return ReportResponse(
         report=text,
