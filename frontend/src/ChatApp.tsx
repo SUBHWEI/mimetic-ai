@@ -22,10 +22,42 @@ type Diagnosis = {
   total_input_symptoms: number
 }
 
+type MedicineDetail = {
+  name: string
+  dosage?: string
+  dosage_mg_kg?: string | null
+  max_daily_dose?: string
+  frequency?: string
+  duration?: string
+  route?: string
+  calculated_dosage?: string
+  reasons?: string[]
+  contraindications?: {
+    conditions: string[]
+    allergies: string[]
+    comorbidities: string[]
+  }
+  adjustments?: {
+    renal: string
+    hepatic: string
+    pediatric: string
+    geriatric: string
+    pregnancy: string
+  }
+  interactions_warning?: string
+  monitoring?: string
+  patient_summary?: string
+}
+
 type Treatment = {
   disease_name: string
-  medicines: { name: string; dosage: string; frequency: string; duration: string }[]
+  medicines?: MedicineDetail[]
   general_recommendations: string
+  // New format from recommend_treatment
+  available?: MedicineDetail[]
+  not_recommended?: MedicineDetail[]
+  alternatives?: MedicineDetail[]
+  non_pharmacological?: string[]
 }
 
 type PatientInfo = {
@@ -49,6 +81,7 @@ type PatientInfo = {
   alcohol?: string
   substances?: string
   physical_activity?: string
+  pregnancy?: string
   medical_history?: string
   surgical_history?: string
   pharmacological_history?: string
@@ -68,6 +101,7 @@ type FieldConfig = {
   type?: 'text' | 'select'
   options?: { value: string; label: string }[]
   suffix?: string
+  condition?: (info: PatientInfo) => boolean
 }
 
 type SearchResult = {
@@ -115,14 +149,37 @@ const ANAMNESIS_FIELDS: FieldConfig[] = [
 ]
 
 const ANTECEDENTES_FIELDS: FieldConfig[] = [
-  { key: 'tobacco', label: 'Consumo de tabaco en los últimos 3 meses', placeholder: 'Ej: No ha fumado, Fuma ocasionalmente, Fuma a diario' },
-  { key: 'alcohol', label: 'Consumo de alcohol en el último mes', placeholder: 'Ej: No consume, 1-2 veces/semana, A diario' },
-  { key: 'substances', label: 'Uso de sustancias en el último año', placeholder: 'Ej: Ninguna, Cannabis, Ocasionalmente' },
+  { key: 'tobacco', label: 'Consumo de tabaco', type: 'select', options: [
+    { value: '', label: '-- Seleccionar --' },
+    { value: 'No', label: 'No fuma' },
+    { value: 'Ocasionalmente', label: 'Ocasionalmente' },
+    { value: 'A diario', label: 'Fuma a diario' },
+    { value: 'Exfumador', label: 'Exfumador' },
+  ]},
+  { key: 'alcohol', label: 'Consumo de alcohol', type: 'select', options: [
+    { value: '', label: '-- Seleccionar --' },
+    { value: 'No', label: 'No consume' },
+    { value: '1-2 veces/semana', label: '1-2 veces por semana' },
+    { value: '3-5 veces/semana', label: '3-5 veces por semana' },
+    { value: 'A diario', label: 'A diario' },
+  ]},
+  { key: 'substances', label: 'Uso de sustancias', type: 'select', options: [
+    { value: '', label: '-- Seleccionar --' },
+    { value: 'No', label: 'Ninguna' },
+    { value: 'Cannabis', label: 'Cannabis' },
+    { value: 'Cocaína', label: 'Cocaína' },
+    { value: 'Otras', label: 'Otras' },
+  ]},
   { key: 'physical_activity', label: 'Actividad física en el último mes', type: 'select', options: [
     { value: 'Sedentario', label: 'Sedentario (poco o ningún ejercicio)' },
     { value: '1-2 veces/semana', label: '1-2 veces por semana' },
     { value: '3+ veces/semana', label: '3 o más veces por semana' },
     { value: 'Diario', label: 'Ejercicio diario' },
+  ]},
+  { key: 'pregnancy', label: '¿Está embarazada?', type: 'select', condition: (info) => info.gender === 'F', options: [
+    { value: '', label: '-- Seleccionar --' },
+    { value: 'true', label: 'Sí' },
+    { value: 'false', label: 'No' },
   ]},
   { key: 'medical_history', label: 'Antecedentes médicos', placeholder: 'Diabetes, HTA, etc.' },
   { key: 'surgical_history', label: 'Antecedentes quirúrgicos', placeholder: 'Cirugías previas' },
@@ -303,6 +360,12 @@ export default function ChatApp() {
       if (key === 'city') {
         updated.location = value
       }
+      if (key === 'birth_date') {
+        const calculated = calculateAgeFromBirthDate(value)
+        if (calculated) {
+          updated.age = calculated
+        }
+      }
       return updated
     })
   }
@@ -357,6 +420,7 @@ export default function ChatApp() {
         alcohol: patientInfo.alcohol || '',
         substances: patientInfo.substances || '',
         physical_activity: patientInfo.physical_activity || '',
+        pregnancy: patientInfo.pregnancy || '',
         medical_history: patientInfo.medical_history || '',
         surgical_history: patientInfo.surgical_history || '',
         pharmacological_history: patientInfo.pharmacological_history || '',
@@ -488,6 +552,33 @@ export default function ChatApp() {
     setMessages([
       { id: '0', role: 'assistant', text: 'Hola, soy Mimetic AI. Antes de comenzar, necesito los datos del paciente.' },
     ])
+  }
+
+  const calculateAgeFromBirthDate = (birthDate: string): string => {
+    if (!birthDate) return ''
+    let parts = birthDate.split('/')
+    if (parts.length === 3) {
+      const day = parseInt(parts[0]), month = parseInt(parts[1]) - 1, year = parseInt(parts[2])
+      const birth = new Date(year, month, day)
+      if (isNaN(birth.getTime())) return ''
+      const today = new Date()
+      let age = today.getFullYear() - birth.getFullYear()
+      const m = today.getMonth() - birth.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+      return age.toString()
+    }
+    parts = birthDate.split('-')
+    if (parts.length === 3) {
+      const year = parseInt(parts[0]), month = parseInt(parts[1]) - 1, day = parseInt(parts[2])
+      const birth = new Date(year, month, day)
+      if (isNaN(birth.getTime())) return ''
+      const today = new Date()
+      let age = today.getFullYear() - birth.getFullYear()
+      const m = today.getMonth() - birth.getMonth()
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+      return age.toString()
+    }
+    return ''
   }
 
   const confidenceColor = (c: number) => {
@@ -656,7 +747,7 @@ export default function ChatApp() {
                 {sectionIcons[formStep]} {visibleGroup.title}
               </h4>
               <div className="patient-fields-grid">
-                {visibleGroup.fields.map((f) => {
+                {visibleGroup.fields.filter(f => !f.condition || f.condition(patientInfo)).map((f) => {
                   const val = patientInfo[f.key as keyof PatientInfo] || ''
                   const filled = !!val.trim()
                   return (
@@ -855,31 +946,162 @@ export default function ChatApp() {
 
               {msg.treatment && (
                 <div className="treatment">
-                  <strong>Tratamiento recomendado:</strong>
-                  {msg.treatment.medicines.length > 0 ? (
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Medicamento</th>
-                          <th>Dosis</th>
-                          <th>Frecuencia</th>
-                          <th>Duración</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {msg.treatment.medicines.map((m, i) => (
-                          <tr key={i}>
-                            <td>{m.name}</td>
-                            <td>{m.dosage}</td>
-                            <td>{m.frequency}</td>
-                            <td>{m.duration}</td>
+                  <strong>Tratamiento para {msg.treatment.disease_name}:</strong>
+
+                  {/* ── NEW FORMAT: recommend_treatment ── */}
+                  {msg.treatment.available && msg.treatment.available.length > 0 && (
+                    <>
+                      <h4 className="tx-subtitle">Medicamentos Recomendados</h4>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Medicamento</th>
+                            <th>Dosis</th>
+                            <th>Vía</th>
+                            <th>Frecuencia</th>
+                            <th>Duración</th>
+                            <th>Monitoreo</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <p className="no-meds">No requiere medicamentos</p>
+                        </thead>
+                        <tbody>
+                          {msg.treatment.available.map((m, i) => (
+                            <tr key={i}>
+                              <td>
+                                <strong>{m.name}</strong>
+                                {m.reasons && m.reasons.length > 0 && (
+                                  <div className="tx-contra">{m.reasons.join('; ')}</div>
+                                )}
+                                {m.patient_summary && <div className="tx-summary">{m.patient_summary}</div>}
+                              </td>
+                              <td>
+                                {m.calculated_dosage ? <span className="tx-calc">{m.calculated_dosage}</span> : m.dosage}
+                                {m.max_daily_dose && <div className="tx-max">Máx: {m.max_daily_dose}</div>}
+                                {m.dosage_mg_kg && <div className="tx-kg">{m.dosage_mg_kg}</div>}
+                              </td>
+                              <td>{m.route || 'Oral'}</td>
+                              <td>{m.frequency}</td>
+                              <td>{m.duration}</td>
+                              <td>{m.monitoring || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+
+                      {msg.treatment.available.some(m => m.adjustments) && (
+                        <div className="tx-details">
+                          {msg.treatment.available.map((m, i) => (
+                            m.adjustments && Object.values(m.adjustments).some(v => v) && (
+                              <details key={i} className="tx-detail-card">
+                                <summary>Ajustes para {m.name}</summary>
+                                {m.adjustments?.renal && <p><strong>Renal:</strong> {m.adjustments.renal}</p>}
+                                {m.adjustments?.hepatic && <p><strong>Hepático:</strong> {m.adjustments.hepatic}</p>}
+                                {m.adjustments?.pediatric && <p><strong>Pediátrico:</strong> {m.adjustments.pediatric}</p>}
+                                {m.adjustments?.geriatric && <p><strong>Geriatría:</strong> {m.adjustments.geriatric}</p>}
+                                {m.adjustments?.pregnancy && <p><strong>Embarazo:</strong> {m.adjustments.pregnancy}</p>}
+                                {m.interactions_warning && <p className="tx-warn"><strong>Interacciones:</strong> {m.interactions_warning}</p>}
+                                {m.contraindications && (m.contraindications.conditions?.length > 0 || m.contraindications.allergies?.length > 0) && (
+                                  <p className="tx-contra-block">
+                                    <strong>Contraindicaciones:</strong>{' '}
+                                    {[...(m.contraindications.conditions || []), ...(m.contraindications.allergies || [])].join(', ')}
+                                  </p>
+                                )}
+                              </details>
+                            )
+                          ))}
+                        </div>
+                      )}
+
+                      {msg.treatment.not_recommended && msg.treatment.not_recommended.length > 0 && (
+                        <div className="tx-not-rec">
+                          <h4 className="tx-subtitle warn">Medicamentos No Recomendados</h4>
+                          {msg.treatment.not_recommended.map((m, i) => (
+                            <div key={i} className="tx-excl">
+                              <strong>{m.name}</strong> — {m.reasons?.join(', ') || 'Contraindicado'}
+                              {m.patient_summary && <div className="tx-summary">{m.patient_summary}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {msg.treatment.alternatives && msg.treatment.alternatives.length > 0 && (
+                        <div className="tx-alt">
+                          <h4 className="tx-subtitle">Medicamentos Alternativos</h4>
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Alternativa</th>
+                                <th>Dosis</th>
+                                <th>Vía</th>
+                                <th>Frecuencia</th>
+                                <th>Duración</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {msg.treatment.alternatives.map((m, i) => (
+                                <tr key={i}>
+                                  <td>
+                                    <strong>{m.name}</strong>
+                                    {m.patient_summary && <div className="tx-summary">{m.patient_summary}</div>}
+                                  </td>
+                                  <td>{m.dosage}{m.max_daily_dose ? <div className="tx-max">Máx: {m.max_daily_dose}</div> : ''}</td>
+                                  <td>{m.route || 'Oral'}</td>
+                                  <td>{m.frequency}</td>
+                                  <td>{m.duration}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {msg.treatment.non_pharmacological && msg.treatment.non_pharmacological.length > 0 && (
+                        <div className="tx-non-pharm">
+                          <h4 className="tx-subtitle">Tratamientos No Farmacológicos</h4>
+                          <ul>
+                            {msg.treatment.non_pharmacological.map((r, i) => (
+                              <li key={i}>{r}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
                   )}
+
+                  {/* ── OLD FORMAT: get_treatment fallback ── */}
+                  {msg.treatment.medicines && (
+                    <>
+                      {msg.treatment.medicines.length > 0 ? (
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Medicamento</th>
+                              <th>Dosis</th>
+                              <th>Vía</th>
+                              <th>Frecuencia</th>
+                              <th>Duración</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {msg.treatment.medicines.map((m, i) => (
+                              <tr key={i}>
+                                <td>
+                                  {m.name}
+                                  {m.patient_summary && <div className="tx-summary">{m.patient_summary}</div>}
+                                </td>
+                                <td>{m.dosage}{m.max_daily_dose ? <div className="tx-max">Máx: {m.max_daily_dose}</div> : ''}</td>
+                                <td>{m.route || 'Oral'}</td>
+                                <td>{m.frequency}</td>
+                                <td>{m.duration}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <p className="no-meds">No requiere medicamentos</p>
+                      )}
+                    </>
+                  )}
+
                   {msg.treatment.general_recommendations && (
                     <div className="recommendations">
                       <strong>Recomendaciones:</strong>

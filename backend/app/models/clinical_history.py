@@ -73,6 +73,7 @@ class Session(BaseModel):
     alcohol: str = ""
     substances: str = ""
     physical_activity: str = ""
+    pregnancy: str = ""
     medical_history: str = ""
     surgical_history: str = ""
     pharmacological_history: str = ""
@@ -100,6 +101,7 @@ class SessionCreate(BaseModel):
     alcohol: str = ""
     substances: str = ""
     physical_activity: str = ""
+    pregnancy: str = ""
     medical_history: str = ""
     surgical_history: str = ""
     pharmacological_history: str = ""
@@ -131,6 +133,7 @@ class SessionOut(BaseModel):
     alcohol: str
     substances: str
     physical_activity: str
+    pregnancy: str
     medical_history: str
     surgical_history: str
     pharmacological_history: str

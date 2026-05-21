@@ -7,19 +7,19 @@ def calculate_match(symptoms_input: list[str], disease_symptoms: list[str]) -> t
 
     matches = input_set & disease_set
     matched_count = len(matches)
-    total_possible = len(input_set)
 
     if matched_count == 0:
         return 0, 0.0
 
-    # Ratio of matched symptoms vs total input symptoms
-    ratio = matched_count / total_possible
+    # Ratio of user's symptoms that match the disease
+    ratio = matched_count / len(input_set)
 
-    # Also consider what fraction of disease symptoms were matched
+    # Fraction of disease symptoms the user has (coverage)
     coverage = matched_count / len(disease_set) if disease_set else 0
 
-    # Combined score
-    score = (ratio * 0.6) + (coverage * 0.4)
-    score = round(min(score, 1.0), 2)
+    # Score = ratio × coverage, penalizing diseases where most of their
+    # symptoms are NOT present in the user. Multiplied by 1.5 to
+    # maintain similar scale as before for strong matches.
+    score = round(min(ratio * coverage * 1.5, 1.0), 2)
 
     return matched_count, score

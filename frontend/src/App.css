@@ -298,6 +298,51 @@
   color: #94a3b8;
 }
 
+.tx-subtitle {
+  font-size: 0.8rem;
+  color: #22c55e;
+  margin: 0.5rem 0 0.25rem;
+}
+.tx-subtitle.warn { color: #eab308; }
+.tx-calc { color: #22c55e; font-weight: 600; }
+.tx-max { font-size: 0.7rem; color: #94a3b8; }
+.tx-kg { font-size: 0.7rem; color: #64748b; }
+.tx-contra { font-size: 0.7rem; color: #ef4444; }
+.tx-summary { color: #16a34a; font-style: italic; font-size: 0.8rem; display: block; margin-top: 0.15rem; line-height: 1.3; }
+.tx-warn { color: #eab308; font-size: 0.75rem; margin: 0.25rem 0; }
+.tx-contra-block { color: #ef4444; font-size: 0.75rem; margin: 0.25rem 0; }
+.tx-details { margin: 0.25rem 0; }
+.tx-detail-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  margin: 0.25rem 0;
+  font-size: 0.75rem;
+}
+.tx-detail-card summary {
+  cursor: pointer;
+  color: #22c55e;
+  font-weight: 600;
+}
+.tx-not-rec {
+  background: #1a0a0a;
+  border: 1px solid #7f1d1d;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin: 0.25rem 0;
+}
+.tx-excl { color: #fca5a5; font-size: 0.8rem; margin: 0.2rem 0; }
+.tx-alt { margin: 0.25rem 0; }
+.tx-non-pharm {
+  background: #0f172a;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin: 0.25rem 0;
+}
+.tx-non-pharm ul { margin: 0.25rem 0; padding-left: 1.25rem; }
+.tx-non-pharm li { font-size: 0.8rem; color: #94a3b8; margin: 0.15rem 0; }
+
 /* ── Learn box ───────────────────────────────────── */
 .learn-box {
   background: #1e293b;

@@ -150,10 +150,9 @@ SYMPTOM_SYNONYMS: dict[str, list[str]] = {
     ],
     "dolor lumbar": [
         "dolor lumbar", "dolor de espalda baja", "lumbalgia",
-        "dolor en la cintura", "dolor en los riñones",
+        "dolor de riñón", "dolor de riñones",
         "dolor de espalda", "dolor lumbar bajo",
-        "espalda adolorida", "dolor de caderas",
-        "me duele la espalda baja",
+        "parte baja de la espalda", "espalda baja",
     ],
     "fiebre alta persistente": [
         "fiebre alta persistente", "fiebre que no baja",
@@ -735,13 +734,17 @@ WORD_INDEX: dict[str, list[str]] = {
     "oído": ["dolor de oído", "secreción del oído"],
     "piel": ["sarpullido", "comezón", "ictericia"],
     "espalda": ["dolor lumbar", "dolor muscular", "dificultad para respirar"],
+    "lumbar": ["dolor lumbar"],
+    "riñon": ["dolor lumbar", "cólico nefrítico"],
+    "rinon": ["dolor lumbar", "cólico nefrítico"],
     "cuello": ["rigidez de cuello", "dolor muscular", "dolor de cabeza"],
     "musculo": ["dolor muscular", "dolor articular"],
     "articulacion": ["dolor articular", "hinchazón", "dolor muscular"],
     "rodilla": ["dolor articular", "hinchazón", "dolor muscular"],
     "hueso": ["dolor articular", "dolor muscular"],
     "orina": ["ardor al orinar", "frecuencia urinaria", "deshidratación"],
-    "baño": ["diarrea", "frecuencia urinaria"],
+    "baño": ["frecuencia urinaria"],
+    "bano": ["frecuencia urinaria"],
     "fiebre": ["fiebre", "fiebre alta persistente", "escalofríos"],
     "ardor": ["ardor al orinar", "ojos rojos"],
     "arden": ["ojos rojos"],
@@ -929,6 +932,16 @@ def normalize_symptoms(raw_symptoms: list[str]) -> dict:
         matched = find_symptom(raw)
         if matched:
             result["matched"].append(matched)
+            # If phrase contains "y" or commas, try each sub-phrase separately
+            # e.g. "me duele al orinar y voy al baño seguido" -> both symptoms
+            for sep in (" y ", ", ", " , "):
+                if sep in raw:
+                    for part in raw.split(sep):
+                        part = part.strip()
+                        if part and part not in raw_symptoms:
+                            extra = find_symptom(part)
+                            if extra and extra not in result["matched"] and extra != matched:
+                                result["matched"].append(extra)
         else:
             result["unmatched"].append(raw)
             # Generate suggestions via keyword decomposition

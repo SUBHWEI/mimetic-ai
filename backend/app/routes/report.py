@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from bson import ObjectId
-from app.expert_system.engine import diagnose, get_treatment
+from app.expert_system.engine import diagnose, get_treatment, recommend_treatment
 from app.database.mongodb import get_db
 from datetime import datetime
 
@@ -50,7 +50,9 @@ async def generate_report(request: ReportRequest):
     results = await diagnose(request.symptoms) if request.symptoms else []
     tx = None
     if request.selected_diagnosis:
-        tx = await get_treatment(request.selected_diagnosis)
+        tx = await recommend_treatment(request.selected_diagnosis, request.patient_info)
+        if not tx or not tx.get("available"):
+            tx = await get_treatment(request.selected_diagnosis)
 
     # ── 1. Información General y Control de Tiempo ──
     info_general = f"""
@@ -95,9 +97,9 @@ async def generate_report(request: ReportRequest):
         if not v:
             return ""
         v_lower = v.lower()
-        if v_lower in ("si", "sí", "activo"):
+        if v_lower in ("si", "sí", "true", "activo"):
             return f"<span class='tag-yes'>Sí</span>"
-        if v_lower in ("no", "ninguno", "ninguna", "sedentario", "n/a"):
+        if v_lower in ("no", "false", "ninguno", "ninguna", "sedentario", "n/a"):
             return f"<span class='tag-no'>No</span>"
         return v
 
@@ -107,6 +109,7 @@ async def generate_report(request: ReportRequest):
         {field_row("Consumo de Alcohol", si_no(val(pi, "alcohol")))}
         {field_row("Uso de Sustancias", si_no(val(pi, "substances")))}
         {field_row("Actividad Física", si_no(val(pi, "physical_activity")))}
+        {field_row("Embarazo", si_no(val(pi, "pregnancy")))}
     </table>
     <h3>Antecedentes Clínicos</h3>
     <table class='info-table'>
@@ -147,32 +150,96 @@ async def generate_report(request: ReportRequest):
     receta = ""
     if tx:
         has_tx = True
-        diag_confirmado = tx["disease_name"]
+        is_new = "available" in tx
+        diag_confirmado = tx.get("disease_name", "")
         receta += f"""
-        <p><strong>Diagnóstico confirmado:</strong> {diag_confirmado}</p>
-        <h3>Medicamentos Prescritos</h3>"""
-        meds = tx.get("medicines", [])
-        if meds:
-            receta += """
-            <table class='info-table'>
-                <tr class='header-row'><th>Medicamento</th><th>Concentración</th><th>Vía</th><th>Dosis / Frecuencia</th><th>Duración</th></tr>"""
-            for m in meds:
-                name = m.get("name", "")
-                dosage = m.get("dosage", "")
-                freq = m.get("frequency", "")
-                duration = m.get("duration", "")
-                via = m.get("route", "Oral")
-                receta += f"""
+        <p><strong>Diagnóstico confirmado:</strong> {diag_confirmado}</p>"""
+
+        def _med_row(m):
+            name = m.get("name", "")
+            dosage = m.get("dosage", "")
+            freq = m.get("frequency", "")
+            duration = m.get("duration", "")
+            via = m.get("route", "Oral")
+            monitoring = m.get("monitoring", "")
+            summary = m.get("patient_summary", "")
+            summary_html = f"<div class='summary-note'>{summary}</div>" if summary else ""
+            return f"""
                 <tr>
-                    <td>{name}</td>
+                    <td>{name}{summary_html}</td>
                     <td>{dosage}</td>
                     <td><span class='tag'>{via}</span></td>
                     <td>{freq}</td>
                     <td>{duration}</td>
+                    <td>{monitoring}</td>
                 </tr>"""
+
+        def _med_notes(m):
+            notes = ""
+            contra = m.get("contraindications", {})
+            if contra:
+                items = []
+                if contra.get("allergies"):
+                    items.append("Alergias: " + ", ".join(contra["allergies"]))
+                if contra.get("conditions"):
+                    items.append("Contraindicado en: " + ", ".join(contra["conditions"]))
+                if items:
+                    notes += f"""<tr><td colspan="6" class="contra-block">{" | ".join(items)}</td></tr>"""
+            adj = m.get("adjustments", {})
+            if adj:
+                adj_items = []
+                for key in ("renal", "hepatic", "pediatric", "geriatric", "pregnancy"):
+                    v = adj.get(key)
+                    if v:
+                        adj_items.append(f"<strong>{key.capitalize()}:</strong> {v}")
+                if adj_items:
+                    notes += f"""<tr><td colspan="6" class="contra-block">{" | ".join(adj_items)}</td></tr>"""
+            int_warn = m.get("interactions_warning")
+            if int_warn:
+                notes += f"""<tr><td colspan="6" class="warning-block">ADVERTENCIA: {int_warn}</td></tr>"""
+            return notes
+
+        if is_new:
+            meds = tx.get("available", [])
+            not_rec = tx.get("not_recommended", [])
+            alt_meds = tx.get("alternatives", [])
+            non_pharm = tx.get("non_pharmacological", [])
+        else:
+            meds = tx.get("medicines", [])
+            not_rec = []
+            alt_meds = tx.get("alternative_medicines", [])
+            non_pharm = tx.get("non_pharmacological_treatments", [])
+
+        if meds or not_rec:
+            receta += """
+        <h3>Medicamentos Prescritos</h3>
+        <table class='info-table'>
+            <tr class='header-row'><th>Medicamento</th><th>Concentración</th><th>Vía</th><th>Frecuencia</th><th>Duración</th><th>Monitoreo</th></tr>"""
+            for m in meds:
+                receta += _med_row(m)
+                receta += _med_notes(m)
+            for m in not_rec:
+                receta += _med_row(m)
+                receta += _med_notes(m)
             receta += "</table>"
         else:
-            receta += "<p class='none'>No requiere medicamentos. Seguir recomendaciones generales.</p>"
+            receta += "<p class='none'>No requiere medicamentos.</p>"
+
+        if alt_meds:
+            receta += """
+        <h3>Medicamentos Alternativos</h3>
+        <table class='info-table'>
+            <tr class='header-row'><th>Medicamento</th><th>Concentración</th><th>Vía</th><th>Frecuencia</th><th>Duración</th><th>Monitoreo</th></tr>"""
+            for m in alt_meds:
+                receta += _med_row(m)
+                receta += _med_notes(m)
+            receta += "</table>"
+
+        if non_pharm:
+            bullets = "".join(f"<li>{t}</li>" for t in non_pharm if isinstance(t, str))
+            receta += f"""
+        <h3>Tratamientos No Farmacológicos</h3>
+        <ul>{bullets}</ul>"""
 
     # ── 8. Recomendaciones Médicas ──
     recomendaciones = ""
@@ -223,6 +290,10 @@ async def generate_report(request: ReportRequest):
   }}
   .tag-yes {{ background: #dcfce7; color: #166534; padding: 1px 6px; border-radius: 3px; font-size: 8pt; font-weight: 600; }}
   .tag-no {{ background: #fee2e2; color: #991b1b; padding: 1px 6px; border-radius: 3px; font-size: 8pt; font-weight: 600; }}
+  .contra-block {{ background: #fff3cd; color: #856404; padding: 2px 8px; font-size: 8.5pt; border-left: 3px solid #ffc107; }}
+  .warning-block {{ background: #f8d7da; color: #721c24; padding: 2px 8px; font-size: 8.5pt; border-left: 3px solid #dc3545; }}
+  .monitoring-block {{ background: #d1ecf1; color: #0c5460; padding: 2px 8px; font-size: 8.5pt; border-left: 3px solid #17a2b8; }}
+  .summary-note {{ color: #166534; font-style: italic; font-size: 8pt; margin-top: 2px; }}
   .footer {{
     margin-top: 20px; border-top: 1px solid #cbd5e1; padding-top: 8px;
     font-size: 7.5pt; color: #94a3b8; text-align: center;
@@ -330,9 +401,15 @@ Temp: {val(pi, "temperature")} | Peso: {val(pi, "weight")} | Estatura: {val(pi, 
             text += f"- {d['disease_name']} ({d['confidence']:.0%}) - {d.get('severity', '')}\n"
 
     if tx:
-        text += f"\n--- 7. Receta Médica ---\nDiagnóstico: {tx['disease_name']}\n"
-        for m in tx.get("medicines", []):
+        text += f"\n--- 7. Receta Médica ---\nDiagnóstico: {tx.get('disease_name', '')}\n"
+        meds_list = tx.get("available", tx.get("medicines", []))
+        for m in meds_list:
             text += f"{m['name']} - {m.get('dosage', '')} - {m.get('frequency', '')} - {m.get('duration', '')}\n"
+        alt_list = tx.get("alternatives", tx.get("alternative_medicines", []))
+        if alt_list:
+            text += "\nAlternativos:\n"
+            for m in alt_list:
+                text += f"{m['name']} - {m.get('dosage', '')} - {m.get('frequency', '')} - {m.get('duration', '')}\n"
         if tx.get("general_recommendations"):
             text += f"\n--- 8. Recomendaciones ---\n{tx['general_recommendations']}\n"
 

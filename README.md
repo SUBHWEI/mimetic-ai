@@ -1,14 +1,6 @@
 # Mimetic AI
 
-Sistema conversacional de apoyo al diagnóstico médico con autenticación por roles, registro de pacientes, login social y verificación por email.
-
-## Roles
-
-| Rol | Descripción |
-|-----|-------------|
-| **Admin** | Gestiona usuarios del hospital (médicos, personal). Acceso al panel de administración. |
-| **Médico** | Funcionalidad completa: registrar pacientes, chat con IA para diagnósticos, generar historias clínicas. |
-| **Paciente** | Consulta sus diagnósticos, historias clínicas y planes de tratamiento. |
+Sistema conversacional de apoyo al diagnóstico médico. El médico registra al paciente, describe los síntomas y el sistema devuelve diagnósticos diferenciales con tratamientos y genera la historia clínica en PDF.
 
 ## Stack
 
@@ -34,75 +26,65 @@ Sistema conversacional de apoyo al diagnóstico médico con autenticación por r
 
 | Rol | Acceso |
 |-----|--------|
-| `admin` | Panel de administración, crear médicos |
+| `admin` | Panel de administración, crear usuarios |
 | `medico` | Chat de diagnóstico, historias clínicas |
-| `paciente` | Portal del paciente (próximamente) |
+| `paciente` | Consulta sus diagnósticos y tratamientos |
 
 ## Inicio rápido
 
 ```bash
-# Backend (local)
+# Backend
 cd backend
-python -m venv .venv
-.venv\Scripts\activate      # Windows
 pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+uvicorn main:app --port 8001 --reload
 
 # Frontend
 cd frontend
 npm install
-npx vite --host 0.0.0.0 --port 5173
+npx vite --port 5173
 ```
 
-Variables de entorno requeridas (ver `start_backend.ps1`):
+Variables de entorno (ver `start_backend.ps1`):
 - `MONGODB_URL` — conexión a MongoDB Atlas
 - `SMTP_USER` / `SMTP_PASSWORD` — credenciales Gmail SMTP
 - `GOOGLE_CLIENT_ID` — OAuth de Google Login
 - `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` — OAuth de Facebook Login
 - `GMAIL_API_CLIENT_ID` / `GMAIL_API_CLIENT_SECRET` / `GMAIL_API_REFRESH_TOKEN` — Gmail API (HTTPS)
 
-## API — Autenticación
+## Diagnóstico conversacional
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| POST | `/api/auth/register` | Registro de paciente con datos personales |
-| POST | `/api/auth/verify-email` | Verificar correo con código de 6 dígitos |
-| POST | `/api/auth/login` | Inicio de sesión |
-| POST | `/api/auth/social-login` | Login/registro con Google o Facebook |
-| POST | `/api/auth/social-register` | Confirmar registro social con datos editados |
-| POST | `/api/auth/create-user` | Crear usuario (admin) — rol: admin/medico |
-| GET | `/api/auth/me` | Perfil del usuario autenticado |
+El flujo principal es:
 
-### Campos del registro de paciente
+1. **Registro del paciente** — formulario con datos personales, antecedentes, signos vitales
+2. **Chat de síntomas** — el médico describe los síntomas, el sistema hace preguntas para discriminar entre enfermedades
+3. **Diagnóstico** — muestra hasta 3 enfermedades con nivel de confianza
+4. **Tratamiento** — medicamentos recomendados con dosis, contraindicaciones, ajustes por peso/embarazo/alergias
+5. **Reporte PDF** — historia clínica completa lista para imprimir
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `email` | string | Correo electrónico (único) |
-| `password` | string | Contraseña |
-| `first_name` | string | Nombres |
-| `last_name` | string | Apellidos |
-| `document_type` | string | CC / CE / TI / Pasaporte / Otro |
-| `document_number` | string | Número de documento (único) |
-| `birth_date` | string | Fecha de nacimiento (YYYY-MM-DD) |
-| `phone` | string | Teléfono de contacto |
-| `country` | string | País |
-| `department` | string | Departamento |
-| `city` | string | Ciudad |
+### Funcionalidades del motor de diagnóstico
 
-## API — Diagnóstico
+- 50 enfermedades con síntomas y tratamientos (medicamentos, dosis, contraindicaciones)
+- Interpreta lenguaje natural del médico (sinónimos, frases coloquiales)
+- Preguntas discriminantes cuando hay varios diagnósticos posibles
+- Auto-detección de síntomas desde signos vitales (fiebre > 37.5, taquipnea, PA alta, etc.)
+- Ajuste de dosis pediátrico por peso (mg/kg) siguiendo guías colombianas
+- Filtro de medicamentos por alergias, embarazo y comorbilidades
+- Explicaciones en español sencillo para el paciente (`patient_summary`)
+
+## API
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | POST | `/api/auth/register` | Registro de paciente |
 | POST | `/api/auth/login` | Inicio de sesión |
-| POST | `/api/auth/create-user` | Crear usuario (solo admin) |
+| POST | `/api/auth/create-user` | Crear usuario (admin) |
 | GET | `/api/auth/me` | Perfil del usuario autenticado |
-| POST | `/api/converse` | Chat conversacional |
-| POST | `/api/patient` | Registrar datos del paciente |
-| POST | `/api/report` | Generar historia clínica |
-| POST | `/api/diagnose` | Diagnosticar por síntomas |
-| POST | `/api/treatment` | Obtener tratamiento |
-| POST | `/api/learn` | Enseñar nuevo sinónimo |
+| POST | `/api/converse` | Chat conversacional de diagnóstico |
+| POST | `/api/diagnose` | Diagnosticar por lista de síntomas |
+| POST | `/api/report` | Generar historia clínica en PDF |
+| POST | `/api/clinical-history` | Crear historia clínica del paciente |
+| GET | `/api/clinical-history/search` | Buscar paciente por documento |
+| POST | `/api/clinical-history/{doc}/sessions` | Crear sesión de consulta |
 | GET | `/api/knowledge/diseases` | Enfermedades registradas |
 | GET | `/api/knowledge/symptoms` | Síntomas registrados |
 | GET | `/api/knowledge/treatments` | Tratamientos registrados |
@@ -110,8 +92,8 @@ Variables de entorno requeridas (ver `start_backend.ps1`):
 
 ## Despliegue
 
-- **Frontend**: Vercel (`mimetic-ai.vercel.app`)
-- **Backend**: Render Web Service (`mimetic-ai-api.onrender.com`)
+- **Frontend**: Vercel
+- **Backend**: Render Web Service
 - **Base de datos**: MongoDB Atlas
 
 Configurar `VITE_API_URL` en Vercel apuntando al backend de Render.
