@@ -1,6 +1,6 @@
 """Conversational engine for interactive diagnosis."""
 
-from app.expert_system.engine import diagnose
+from app.expert_system.engine import diagnose, merge_vital_symptoms
 from app.database.mongodb import get_db
 
 MAX_CANDIDATES_FOR_SUGGESTIONS = 5
@@ -100,11 +100,13 @@ def _build_specific_question(symptom_name: str) -> str | None:
     return None
 
 
-async def generate_followup(symptoms: list[str]) -> dict:
+async def generate_followup(symptoms: list[str], patient_info: dict | None = None) -> dict:
     """Generate follow-up question based on current symptoms.
 
     Always tries to ask discriminating questions first.
     Only returns ready=True when no more useful questions remain.
+
+    If patient_info is provided, vital signs are merged into the symptom list.
 
     Returns:
         dict with:
@@ -113,6 +115,9 @@ async def generate_followup(symptoms: list[str]) -> dict:
             - diagnoses: list[dict] (current top diagnoses)
             - ready: bool (if we have few enough diagnoses)
     """
+    if patient_info:
+        symptoms = merge_vital_symptoms(patient_info, symptoms)
+
     results = await diagnose(symptoms)
     if not results:
         return {

@@ -1,6 +1,7 @@
 from app.database.mongodb import get_db
 from app.expert_system.matcher import calculate_match
 from bson import ObjectId
+import re
 import unicodedata
 
 
@@ -73,6 +74,13 @@ async def recommend_treatment(disease_name: str, patient_info: dict) -> dict | N
     if not treatment:
         return None
 
+    try:
+        return _recommend_treatment_impl(treatment, patient_info)
+    except Exception:
+        return None
+
+
+def _recommend_treatment_impl(treatment: dict, patient_info: dict) -> dict | None:
     raw_allergies = patient_info.get("allergies", "")
     allergies = [a.strip() for a in raw_allergies.split(",") if a.strip()] if isinstance(raw_allergies, str) else (raw_allergies if isinstance(raw_allergies, list) else [])
     raw_comorbidities = patient_info.get("comorbidities", "") or patient_info.get("medical_history", "")
@@ -87,8 +95,6 @@ async def recommend_treatment(disease_name: str, patient_info: dict) -> dict | N
         weight = float(weight_str) if weight_str else None
     except (ValueError, TypeError):
         weight = None
-
-    import re
 
     available = []
     not_recommended = []
