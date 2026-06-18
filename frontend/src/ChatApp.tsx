@@ -219,7 +219,8 @@ export default function ChatApp() {
     { id: '0', role: 'assistant', text: 'Hola, soy Mimetic AI. Antes de comenzar, necesito los datos del paciente.' },
   ])
   const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false)
   const [currentSymptoms, setCurrentSymptoms] = useState<string[]>([])
   const [patientInfo, setPatientInfo] = useState<PatientInfo>({})
   const allFieldKeys = FULL_GROUPS.flatMap(g => g.fields.map(f => f.key))
@@ -232,6 +233,7 @@ export default function ChatApp() {
   const endRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<(HTMLDivElement | null)[]>([])
   const searchRef = useRef<HTMLInputElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -243,7 +245,12 @@ export default function ChatApp() {
   const fieldGroups = patientInfoMode === 'full' ? FULL_GROUPS : SESSION_GROUPS
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = endRef.current?.parentElement
+    if (!el) return
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    if (isNearBottom) {
+      endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages])
 
   useEffect(() => {
@@ -261,6 +268,10 @@ export default function ChatApp() {
       searchRef.current.focus()
     }
   }, [phase])
+
+  useEffect(() => {
+    return () => abortRef.current?.abort()
+  }, [])
 
   const doSearch = useCallback(async (q: string) => {
     if (!q || q.length < 1) {
@@ -371,7 +382,7 @@ export default function ChatApp() {
   }
 
   const submitPatientForm = async () => {
-    setLoading(true)
+    setIsSending(true)
     try {
       const docNum = patientInfo.id_document || selectedDocument
       if (!docNum) throw new Error('Número de documento requerido')
@@ -458,28 +469,36 @@ export default function ChatApp() {
     } catch (err: any) {
       setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: `Error: ${err.message}` }])
     }
-    setLoading(false)
+    setIsSending(false)
   }
 
   const handleSend = async (textOverride?: string) => {
     const text = (textOverride || input).trim()
-    if (!text || loading) return
+    if (!text || isSending) return
     if (!textOverride) setInput('')
 
     const userMsg: Message = { id: crypto.randomUUID(), role: 'user', text }
     setMessages(m => [...m, userMsg])
 
-    setLoading(true)
+    if (abortRef.current) abortRef.current.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
+    setIsSending(true)
     try {
       const res = await fetch(API + '/api/converse', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        signal: controller.signal,
         body: JSON.stringify({
           message: text,
           current_symptoms: currentSymptoms,
           patient_info: patientInfo,
         }),
       })
+      if (!res.ok) {
+        throw new Error(`Error del servidor (${res.status})`)
+      }
       const data = await res.json()
 
       if (data.normalized_symptoms && data.normalized_symptoms.length > 0) {
@@ -498,10 +517,12 @@ export default function ChatApp() {
         treatment: data.treatment || undefined,
       }
       setMessages(m => [...m, msg])
-    } catch {
-      setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: 'Error de conexión con el servidor.' }])
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: err.message || 'Error de conexión con el servidor.' }])
+      }
     }
-    setLoading(false)
+    setIsSending(false)
   }
 
   const handleSuggestion = (symptom: string) => {
@@ -514,7 +535,7 @@ export default function ChatApp() {
   }
 
   const generateReport = async () => {
-    setLoading(true)
+    setIsGeneratingReport(true)
     try {
       const res = await fetch(API + '/api/report', {
         method: 'POST',
@@ -533,7 +554,7 @@ export default function ChatApp() {
     } catch {
       setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: 'Error generando el reporte.' }])
     }
-    setLoading(false)
+    setIsGeneratingReport(false)
   }
 
   const resetAll = () => {
@@ -761,7 +782,7 @@ export default function ChatApp() {
                           <select
                             value={val}
                             onChange={e => handlePatientFieldChange(f.key, e.target.value)}
-                            disabled={loading}
+                            disabled={isSending}
                           >
                             <option value="">-- Seleccionar --</option>
                             {f.options?.map(o => (
@@ -782,7 +803,7 @@ export default function ChatApp() {
                                 if (next) next.focus()
                               }
                             }}
-                            disabled={loading}
+                            disabled={isSending}
                           />
                         )}
                         {f.suffix && <span className="patient-field-suffix">{f.suffix}</span>}
@@ -827,9 +848,9 @@ export default function ChatApp() {
                 <button
                   className="patient-submit"
                   onClick={submitPatientForm}
-                  disabled={loading}
+                  disabled={isSending}
                 >
-                  {loading ? 'Guardando...' : '✓ Finalizar y comenzar consulta'}
+                  {isSending ? 'Guardando...' : '✓ Finalizar y comenzar consulta'}
                 </button>
               </div>
             )}
@@ -1114,7 +1135,7 @@ export default function ChatApp() {
           </div>
         ))}
 
-        {loading && (
+        {isSending && (
           <div className="message assistant">
             <div className="bubble typing">
               <span className="dot" />
@@ -1127,7 +1148,7 @@ export default function ChatApp() {
         <div ref={endRef} />
       </div>
 
-      {currentSymptoms.length > 0 && !loading && (
+      {currentSymptoms.length > 0 && !isSending && (
         <div className="quick-symptoms">
           {suggestedSymptoms.map((s) => (
             <button key={s} className="quick-chip" onClick={() => handleSuggestion(s)}>
@@ -1142,8 +1163,8 @@ export default function ChatApp() {
 
       {selectedDiagnosis && (
         <div className="report-bar">
-          <button className="generate-report-btn" onClick={generateReport} disabled={loading}>
-            {loading ? 'Generando...' : 'Generar historia clínica y receta'}
+          <button className="generate-report-btn" onClick={generateReport} disabled={isGeneratingReport}>
+            {isGeneratingReport ? 'Generando...' : 'Generar historia clínica y receta'}
           </button>
         </div>
       )}
@@ -1154,9 +1175,9 @@ export default function ChatApp() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Describe el síntoma..."
-          disabled={loading}
+          disabled={isSending}
         />
-        <button onClick={() => handleSend()} disabled={loading || !input.trim()}>
+        <button onClick={() => handleSend()} disabled={isSending || !input.trim()}>
           Enviar
         </button>
       </div>
