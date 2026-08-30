@@ -254,7 +254,7 @@ async def generate_report(request: ReportRequest):
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Historia Clínica - Mimetic AI</title>
+<title>Historia Clínica - MIMETIC</title>
 <style>
   @page {{ size: letter; margin: 15mm; }}
   * {{ box-sizing: border-box; }}
@@ -308,7 +308,7 @@ async def generate_report(request: ReportRequest):
 <body>
 
 <div class="header">
-  <h1>Mimetic AI — Historia Clínica</h1>
+  <h1>MIMETIC — Historia Clínica</h1>
   <p>Sistema de Apoyo al Diagnóstico Médico</p>
   <p>Reporte generado: {date_str} {time_str}</p>
 </div>
@@ -354,7 +354,7 @@ async def generate_report(request: ReportRequest):
 </section>
 
 <div class="footer">
-  <p>Este reporte es generado por Mimetic AI como herramienta de apoyo al diagnóstico.</p>
+  <p>Este reporte es generado por MIMETIC como herramienta de apoyo al diagnóstico.</p>
   <p>No sustituye el criterio de un profesional de la salud. Ley 23 de 1981 — Colombia.</p>
 </div>
 
@@ -363,7 +363,7 @@ async def generate_report(request: ReportRequest):
 
     # Plain text
     text = f"""=== HISTORIA CLÍNICA ===
-Mimetic AI - Sistema de Apoyo al Diagnóstico Médico
+MIMETIC - Sistema de Apoyo al Diagnóstico Médico
 Fecha: {date_str} - {time_str}
 
 --- 1. Información General ---

@@ -3,6 +3,7 @@ import json
 import base64
 import threading
 import logging
+from datetime import datetime
 import urllib.request
 import urllib.parse
 from email.mime.text import MIMEText
@@ -17,19 +18,70 @@ logger = logging.getLogger(__name__)
 
 
 def _build_html(code: str, name: str) -> str:
+    greeting = f"Hola, <strong>{name}</strong>," if name else "Hola,"
     return f"""
-    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
-        <h2 style="color: #6366f1;">Mimetic AI</h2>
-        <p>Hola <strong>{name}</strong>,</p>
-        <p>Tu código de verificación es:</p>
-        <div style="text-align: center; margin: 24px 0;">
-            <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px;
-                background: #1e293b; color: #a5b4fc; padding: 12px 24px;
-                border-radius: 8px;">{code}</span>
-        </div>
-        <p>Este código expira en 10 minutos.</p>
-        <p style="color: #64748b; font-size: 12px;">Si no solicitaste este código, ignora este mensaje.</p>
-    </div>
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="margin:0; padding:0; background-color:#f4f6fb; font-family:'Segoe UI', Arial, Helvetica, sans-serif;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#f4f6fb" style="padding:32px 16px;">
+            <tr>
+                <td align="center">
+                    <table role="presentation" cellspacing="0" cellpadding="0" width="520" style="max-width:520px; width:100%; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 8px 30px rgba(99,102,241,0.12); border:1px solid #e5e9f4;">
+                        <!-- Header -->
+                        <tr>
+                            <td style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%); padding:32px 40px; text-align:center;">
+                                <div style="font-size:13px; letter-spacing:6px; color:#c7d2fe; text-transform:uppercase; font-weight:600;">Semillero Quantum · UNIMINUTO</div>
+                                <div style="font-size:30px; font-weight:800; color:#ffffff; margin-top:8px; letter-spacing:1px;">MIMETIC</div>
+                                <div style="font-size:14px; color:#e0e7ff; margin-top:4px;">Sistema de apoyo al diagnóstico médico</div>
+                            </td>
+                        </tr>
+                        <!-- Body -->
+                        <tr>
+                            <td style="padding:36px 40px 28px 40px;">
+                                <div style="font-size:20px; color:#1e293b; font-weight:700; margin-bottom:12px;">Verificación de cuenta</div>
+                                <div style="font-size:15px; color:#475569; line-height:1.7;">
+                                    {greeting}
+                                    <br><br>
+                                    Para completar el registro en <strong>MIMETIC</strong>, ingresa el siguiente
+                                    código de verificación de <strong>6 dígitos</strong> en la aplicación:
+                                </div>
+
+                                <!-- Code box -->
+                                <div style="margin:28px 0 24px 0; text-align:center;">
+                                    <div style="display:inline-block; background:#eef2ff; border:2px dashed #a5b4fc; border-radius:14px; padding:20px 32px;">
+                                        <div style="font-size:14px; color:#6366f1; font-weight:600; letter-spacing:2px; margin-bottom:6px;">TU CÓDIGO DE VERIFICACIÓN</div>
+                                        <div style="font-size:38px; font-weight:800; letter-spacing:10px; color:#1e293b; font-family:Consolas, 'Courier New', monospace;">{code}</div>
+                                    </div>
+                                </div>
+
+                                <div style="font-size:14px; color:#64748b; line-height:1.6; text-align:center;">
+                                    ⏱️ Este código expira en <strong>10 minutos</strong>.<br>
+                                    No lo compartas con nadie.
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- Footer -->
+                        <tr>
+                            <td style="padding:20px 40px 32px 40px; background-color:#f8faff; border-top:1px solid #eceff8;">
+                                <div style="font-size:13px; color:#94a3b8; line-height:1.6; text-align:center;">
+                                    Si no solicitaste este código, ignora este mensaje y protege tu cuenta.
+                                    <br><br>
+                                    <span style="color:#94a3b8;">Semillero Quantum · UNIMINUTO</span>
+                                    <br>
+                                    <span style="color:#b3bccc;">© {datetime.now().year} MIMETIC. Todos los derechos reservados.</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+    </html>
     """
 
 
@@ -37,7 +89,7 @@ def _send_smtp(to_email: str, html: str):
     msg = MIMEMultipart()
     msg["From"] = FROM_EMAIL
     msg["To"] = to_email
-    msg["Subject"] = "Código de verificación - Mimetic AI"
+    msg["Subject"] = "Código de verificación - MIMETIC"
     msg.attach(MIMEText(html, "html"))
 
     if SMTP_USE_SSL:
@@ -55,8 +107,8 @@ def _send_smtp(to_email: str, html: str):
 def _send_sendgrid(to_email: str, html: str):
     data = json.dumps({
         "personalizations": [{"to": [{"email": to_email}]}],
-        "from": {"email": "mimeticvalidated@gmail.com", "name": "Mimetic AI"},
-        "subject": "Código de verificación - Mimetic AI",
+        "from": {"email": "mimeticvalidated@gmail.com", "name": "MIMETIC"},
+        "subject": "Código de verificación - MIMETIC",
         "content": [{"type": "text/html", "value": html}],
     }).encode()
     req = urllib.request.Request(
@@ -89,9 +141,9 @@ def _send_gmail_api(to_email: str, html: str):
     access_token = token_data["access_token"]
 
     msg = MIMEText(html, "html")
-    msg["From"] = "Mimetic AI <mimeticvalidated@gmail.com>"
+    msg["From"] = "MIMETIC <mimeticvalidated@gmail.com>"
     msg["To"] = to_email
-    msg["Subject"] = "Código de verificación - Mimetic AI"
+    msg["Subject"] = "Código de verificación - MIMETIC"
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
 
     body = json.dumps({"raw": raw}).encode()

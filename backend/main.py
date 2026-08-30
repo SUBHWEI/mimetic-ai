@@ -8,7 +8,7 @@ from app.routes import diagnosis, knowledge, converse, patient, report, auth, cl
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
-EXPECTED_DISEASES = 50
+EXPECTED_DISEASES = 51
 
 async def auto_seed():
     db = get_db()
@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
     await close_db()
 
 
-app = FastAPI(title="Mimetic AI - Medical Expert System", lifespan=lifespan)
+app = FastAPI(title="MIMETIC - Medical Expert System", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,4 +69,4 @@ app.include_router(clinical_history.router, prefix="/api", tags=["Clinical Histo
 async def health():
     from app.database.mongodb import get_db
     db_ok = get_db() is not None
-    return {"status": "ok" if db_ok else "degraded", "service": "Mimetic AI", "database": "connected" if db_ok else "disconnected"}
+    return {"status": "ok" if db_ok else "degraded", "service": "MIMETIC", "database": "connected" if db_ok else "disconnected"}

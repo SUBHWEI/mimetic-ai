@@ -717,6 +717,18 @@ SYMPTOM_SYNONYMS: dict[str, list[str]] = {
         "problemas de concentración", "no puedo concentrarme",
         "mente nublada",
     ],
+    "hematoma": [
+        "hematoma", "moretón", "moreton", "morado", "morados",
+        "moretone", "mancha morada", "mancha morado", "equimosis",
+        "cardenal", "me puse morado", "golpe que deja morado",
+        "moretón en la piel", "moratón",
+    ],
+    "contusión": [
+        "contusión", "contusion", "golpe", "golpes", "golpeado",
+        "traumatismo", "trauma", "lesión por golpe", "me golpeé",
+        "me golpee", "me di un golpe", "me caí y me golpeé",
+        "golpe en la cabeza", "golpe en el cuerpo", "choque",
+    ],
 }
 
 # ── Semantic word index for automatic relationship ──────────────
@@ -798,6 +810,18 @@ WORD_INDEX: dict[str, list[str]] = {
     "apendice": ["dolor abdominal periumbilical que migra a fosa ilíaca derecha", "dolor abdominal"],
     "costado": ["dolor lumbar", "dolor en hipocondrio derecho", "cólico nefrítico"],
     "cintura": ["dolor lumbar", "dolor abdominal"],
+    "golpe": ["contusión", "hematoma", "dolor muscular"],
+    "golpes": ["contusión", "hematoma", "dolor muscular"],
+    "moreton": ["hematoma", "contusión"],
+    "moretón": ["hematoma", "contusión"],
+    "morado": ["hematoma", "contusión", "cianosis"],
+    "morados": ["hematoma", "contusión"],
+    "hematoma": ["hematoma", "contusión"],
+    "contusion": ["contusión", "hematoma"],
+    "contusión": ["contusión", "hematoma"],
+    "trauma": ["contusión", "hematoma"],
+    "equimosis": ["hematoma", "contusión"],
+    "cardenal": ["hematoma", "contusión"],
 }
 
 # Stop-words to ignore during decomposition

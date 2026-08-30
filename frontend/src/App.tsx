@@ -8,7 +8,7 @@ import ChatApp from './ChatApp'
 import PatientDashboard from './pages/PatientDashboard'
 import AdminPanel from './pages/AdminPanel'
 
-const GOOGLE_CLIENT_ID = '736518024017-67rrlj9a6smuvon5ppcne06vbq07g13c.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '821096294804-8kt4ghsltbtu1q6djkpmi6hj9o6mudcb.apps.googleusercontent.com'
 
 function RoleRedirect() {
   const { user } = useAuth()

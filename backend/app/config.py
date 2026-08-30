@@ -1,11 +1,14 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "mimetic_ai")
 JWT_SECRET = os.getenv("JWT_SECRET", "mimetic-ai-secret-change-in-production")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRATION_HOURS = int(os.getenv("JWT_EXPIRATION_HOURS", "24"))
-FROM_EMAIL = os.getenv("FROM_EMAIL", "Mimetic AI <mimeticvalidated@gmail.com>")
+FROM_EMAIL = os.getenv("FROM_EMAIL", "MIMETIC <mimeticvalidated@gmail.com>")
 
 # Gmail SMTP (fallback, no funciona en Render free tier)
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
@@ -21,5 +24,6 @@ GMAIL_API_REFRESH_TOKEN = os.getenv("GMAIL_API_REFRESH_TOKEN", "")
 
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID", "")
 FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET", "")

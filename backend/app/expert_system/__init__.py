@@ -8,7 +8,7 @@ from app.expert_system.engine import (
 )
 from app.expert_system.conversation import generate_followup
 from app.expert_system.matcher import calculate_match
-from app.expert_system.normalizer import normalize_symptom
+from app.expert_system.normalizer import normalize
 
 __all__ = [
     "diagnose",
@@ -19,5 +19,5 @@ __all__ = [
     "merge_vital_symptoms",
     "generate_followup",
     "calculate_match",
-    "normalize_symptom",
+    "normalize",
 ]
