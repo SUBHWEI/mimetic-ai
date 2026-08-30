@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type FormEvent } from 'react'
 import { useGoogleLogin } from '@react-oauth/google'
 import { API } from '../config'
 
@@ -26,6 +26,9 @@ export default function SocialLogin() {
     name: '',
   })
   const [submitting, setSubmitting] = useState(false)
+  const [verifyEmail, setVerifyEmail] = useState('')
+  const [verifyCode, setVerifyCode] = useState('')
+  const [verifying, setVerifying] = useState(false)
   const [fbReady, setFbReady] = useState(false)
   const fbCheckDone = useRef(false)
 
@@ -104,8 +107,10 @@ export default function SocialLogin() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Error al registrar')
-      localStorage.setItem('token', data.access_token)
-      window.location.href = '/'
+      localStorage.removeItem('token')
+      setForm(prev => ({ ...prev, email: data.email || prev.email }))
+      setProfile(null)
+      setVerifyEmail(data.email || form.email)
     } catch (err: any) {
       setError(err.message)
     }
@@ -130,6 +135,26 @@ export default function SocialLogin() {
     setError('')
   }
 
+  const handleSocialVerify = async (e: FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setVerifying(true)
+    try {
+      const res = await fetch(API + '/api/auth/verify-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: verifyEmail, code: verifyCode }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Error al verificar')
+      localStorage.setItem('token', data.access_token)
+      window.location.href = '/'
+    } catch (err: any) {
+      setError(err.message)
+    }
+    setVerifying(false)
+  }
+
   const googleLogin = useGoogleLogin({
     onSuccess: (response) => handleSocialResponse('google', response.access_token),
     onError: () => setError('Inicio de sesión con Google cancelado'),
@@ -147,6 +172,38 @@ export default function SocialLogin() {
         setError('Inicio de sesión con Facebook cancelado')
       }
     }, { scope: 'email,public_profile' })
+  }
+
+  if (verifyEmail) {
+    return (
+      <form className="social-confirm" onSubmit={handleSocialVerify}>
+        {error && <div className="auth-error">{error}</div>}
+        <div className="social-confirm-header">
+          <div className="social-confirm-icon">🔵</div>
+          <p>Verifica tu correo para completar el registro</p>
+        </div>
+        <div className="auth-field">
+          <label>Código de verificación</label>
+          <input
+            type="text"
+            placeholder="Ingresa el código de 6 dígitos"
+            value={verifyCode}
+            onChange={e => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            required
+            maxLength={6}
+          />
+        </div>
+        <p className="auth-hint">
+          Enviamos un código de 6 dígitos a <strong>{verifyEmail}</strong>. Es válido por 10 minutos.
+        </p>
+        {verifyCode.length !== 6 && (
+          <p className="auth-hint">Revisa también la carpeta de spam o promociones.</p>
+        )}
+        <button type="submit" className="auth-btn" disabled={verifying || verifyCode.length !== 6}>
+          {verifying ? 'Verificando...' : 'Verificar'}
+        </button>
+      </form>
+    )
   }
 
   if (profile) {

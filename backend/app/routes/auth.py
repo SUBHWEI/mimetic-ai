@@ -262,7 +262,7 @@ async def social_login(data: dict):
     return {"provider": provider, "token": token, "email": email, "name": name, "new_user": True}
 
 
-@router.post("/social-register", response_model=Token)
+@router.post("/social-register")
 async def social_register(data: dict):
     db = get_db()
     provider = data.get("provider")
@@ -298,14 +298,19 @@ async def social_register(data: dict):
         "department": data.get("department", ""),
         "city": data.get("city", ""),
         "phone": data.get("phone", ""),
-        "verified": True,
+        "verified": False,
         "created_at": datetime.utcnow(),
     }
     result = await db.users.insert_one(user_doc)
-    user = await db.users.find_one({"_id": result.inserted_id})
-    access_token = create_access_token(str(result.inserted_id))
 
-    return Token(access_token=access_token, user=user_to_out(user))
+    code = str(random.randint(100000, 999999))
+    await db.verification_codes.update_one(
+        {"email": email},
+        {"$set": {"code": code, "expires_at": datetime.utcnow() + timedelta(minutes=10)}},
+        upsert=True,
+    )
+    send_verification_code(email, code, name)
+    return {"message": "Verification code sent to email", "email": email}
 
 
 @router.get("/me", response_model=UserOut)
