@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from './context/AuthContext'
+import { API } from './config'
 import './App.css'
-
-const API = import.meta.env.VITE_API_URL || ''
 
 type Message = {
   id: string

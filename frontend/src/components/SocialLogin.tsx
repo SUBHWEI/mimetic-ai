@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useGoogleLogin } from '@react-oauth/google'
-
-const API = import.meta.env.VITE_API_URL || ''
+import { API } from '../config'
 
 type SocialProfile = {
   provider: string

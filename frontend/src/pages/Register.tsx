@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-const API = import.meta.env.VITE_API_URL || ''
+import { API } from '../config'
 
 export default function Register() {
   const { user } = useAuth()

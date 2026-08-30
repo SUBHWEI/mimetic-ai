@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-
-const API = import.meta.env.VITE_API_URL || ''
+import { API } from '../config'
 
 type User = {
   id: string
