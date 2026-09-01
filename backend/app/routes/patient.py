@@ -88,17 +88,30 @@ async def patient_info(
     msg = request.message.strip()
 
     if msg:
-        for field in PATIENT_FIELDS:
-            key = field["key"]
-            if key not in info or not info[key]:
-                if key in OPTIONAL_FIELDS:
-                    if msg.lower() in ("ninguno", "no", "none", "ninguna", "no aplica", "n/a", "no fuma", "no bebe", "sedentario", "activo"):
-                        info[key] = msg
-                    else:
-                        info[key] = msg
-                else:
+        msg_lower = msg.lower()
+        neg_keywords = ("ninguno", "no", "none", "ninguna", "no aplica", "n/a", "no fuma", "no bebe", "sedentario", "activo")
+
+        # Negation keywords only fill optional fields
+        if msg_lower in neg_keywords:
+            for field in PATIENT_FIELDS:
+                key = field["key"]
+                if key in OPTIONAL_FIELDS and (key not in info or not info[key]):
                     info[key] = msg
-                break
+                    break
+        # Normal answers prioritize required fields, then optional
+        else:
+            target = None
+            for field in PATIENT_FIELDS:
+                key = field["key"]
+                if key not in info or not info[key]:
+                    if key in OPTIONAL_FIELDS:
+                        if target is None:
+                            target = field
+                    else:
+                        target = field
+                        break
+            if target:
+                info[target["key"]] = msg
 
     missing = []
     for field in PATIENT_FIELDS:
