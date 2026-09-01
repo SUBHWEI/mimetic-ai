@@ -1,14 +1,14 @@
-import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.mongodb import connect_db, close_db, get_db, ensure_connected
 from app.config import CORS_ORIGINS
 from app.rate_limit import limiter
+from app.logging_config import setup_logging, get_logger, LogContextMiddleware
 from app.routes import diagnosis, knowledge, converse, patient, report, auth, clinical_history, hospitals
 
-logger = logging.getLogger("mimetic.main")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+setup_logging()
+logger = get_logger("mimetic.main")
 
 knowledge_synced = False
 
@@ -53,13 +53,8 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
 app.state.limiter = limiter
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(LogContextMiddleware)
 
 app.include_router(diagnosis.router, prefix="/api", tags=["Diagnosis"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["Knowledge Base"])
