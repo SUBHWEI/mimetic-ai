@@ -6911,13 +6911,13 @@ async def seed():
     db = client[DB_NAME]
 
     try:
-        n_symptoms = _upsert_many(db.symptoms, symptoms, "name")
+        n_symptoms = await _upsert_many(db.symptoms, symptoms, "name")
         print(f"Upserted {n_symptoms} symptoms")
 
-        n_diseases = _upsert_many(db.diseases, diseases, "name")
+        n_diseases = await _upsert_many(db.diseases, diseases, "name")
         print(f"Upserted {n_diseases} diseases")
 
-        n_treatments = _upsert_many(db.treatments, treatments, "disease_name")
+        n_treatments = await _upsert_many(db.treatments, treatments, "disease_name")
         print(f"Upserted {n_treatments} treatments")
     finally:
         client.close()
@@ -6925,8 +6925,11 @@ async def seed():
     print("Seed completed!")
 
 
-async def force_rebuild():
-    """Borra y vuelve a sembrar todo (solo para re-inicializar)."""
+async def force_rebuild(confirm: bool = False):
+    """Borra y vuelve a sembrar todo (DESTRUCTIVO: solo con confirm=True)."""
+    if not confirm:
+        print("ABORTADO: force_rebuild() es destructivo. Pasa confirm=True para ejecutarlo.")
+        return
     client = AsyncIOMotorClient(MONGO_URL)
     db = client[DB_NAME]
 
