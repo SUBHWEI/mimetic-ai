@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { Suspense, lazy } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import Login from './pages/Login'
-import Register from './pages/Register'
 import ChatApp from './ChatApp'
 import PatientDashboard from './pages/PatientDashboard'
 import AdminPanel from './pages/AdminPanel'
+
+const Register = lazy(() => import('./pages/Register'))
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '821096294804-8kt4ghsltbtu1q6djkpmi6hj9o6mudcb.apps.googleusercontent.com'
 
@@ -24,7 +26,7 @@ export default function App() {
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/register" element={<Suspense fallback={null}><Register /></Suspense>} />
             <Route
               path="/"
               element={
