@@ -31,6 +31,7 @@ def user_to_out(user: dict) -> UserOut:
         department=user.get("department", ""),
         city=user.get("city", ""),
         phone=user.get("phone", ""),
+        active=user.get("active", True),
         created_at=user.get("created_at", datetime.utcnow()),
     )
 
@@ -124,6 +125,7 @@ async def register(request: Request, data: UserCreate):
         "city": data.city,
         "phone": data.phone,
         "verified": False,
+        "active": True,
         "created_at": datetime.utcnow(),
     }
     result = await db.users.insert_one(user_doc)
@@ -211,6 +213,7 @@ async def create_user(data: UserCreateByAdmin, admin: UserOut = Depends(require_
         "role": data.role,
         "hospital_id": data.hospital_id,
         "verified": True,
+        "active": True,
         "created_at": datetime.utcnow(),
     }
     result = await db.users.insert_one(user_doc)
@@ -251,6 +254,9 @@ async def login(request: Request, data: UserLogin):
     user = await db.users.find_one({"email": data.email})
     if not user or not pwd_context.verify(data.password, user["password_hash"]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+
+    if not user.get("active", True):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cuenta deshabilitada")
 
     if not user.get("verified", True):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified")
@@ -294,6 +300,10 @@ async def social_login(request: Request, data: dict):
 
     user = await db.users.find_one({"email": email})
     if user:
+        if not user.get("active", True):
+            raise HTTPException(status_code=403, detail="Cuenta deshabilitada")
+        if not user.get("verified", False):
+            raise HTTPException(status_code=403, detail="Email not verified")
         access_token = create_access_token(str(user["_id"]), user.get("hospital_id", ""))
         return Token(access_token=access_token, user=user_to_out(user))
 
@@ -338,6 +348,7 @@ async def social_register(request: Request, data: dict):
         "city": data.get("city", ""),
         "phone": data.get("phone", ""),
         "verified": False,
+        "active": True,
         "created_at": datetime.utcnow(),
     }
     result = await db.users.insert_one(user_doc)

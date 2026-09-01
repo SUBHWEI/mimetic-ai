@@ -23,6 +23,7 @@ class User(BaseModel):
     city: str = ""
     phone: str = ""
     verified: bool = False
+    active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -73,6 +74,7 @@ class UserOut(BaseModel):
     department: str
     city: str
     phone: str
+    active: bool = True
     created_at: datetime
 
 

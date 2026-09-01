@@ -23,6 +23,9 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
+    if not user.get("active", True):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cuenta deshabilitada")
+
     from app.models.user import UserOut
     return UserOut(
         id=str(user["_id"]),
@@ -39,5 +42,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         department=user.get("department", ""),
         city=user.get("city", ""),
         phone=user.get("phone", ""),
+        active=user.get("active", True),
         created_at=user.get("created_at"),
     )
