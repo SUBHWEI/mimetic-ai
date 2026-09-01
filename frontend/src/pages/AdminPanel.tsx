@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { API } from '../config'
+import { apiFetch } from '../api/client'
 import CreateUserForm from '../components/admin/CreateUserForm'
 import UserList from '../components/admin/UserList'
 
@@ -16,7 +16,7 @@ type Hospital = {
 }
 
 export default function AdminPanel() {
-  const { user, token, logout } = useAuth()
+  const { user, logout } = useAuth()
   const isSuperAdmin = user?.role === 'super_admin'
 
   const [tab, setTab] = useState<'users' | 'hospitals'>('users')
@@ -31,9 +31,7 @@ export default function AdminPanel() {
     setHospLoading(true)
     setHospError('')
     try {
-      const res = await fetch(API + '/api/hospitals', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await apiFetch('/api/hospitals')
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.detail || 'Error al cargar hospitales')
@@ -48,23 +46,18 @@ export default function AdminPanel() {
   }
 
   useEffect(() => {
-    if (user && token) {
+    if (user) {
       loadHospitals()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, token])
+  }, [user])
 
   const handleCreateHospital = async (e: FormEvent) => {
     e.preventDefault()
     setHospMsg('')
     setHospError('')
     try {
-      const res = await fetch(API + '/api/hospitals', {
+      const res = await apiFetch('/api/hospitals', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(newHospital),
       })
       const data = await res.json().catch(() => ({}))
@@ -82,12 +75,8 @@ export default function AdminPanel() {
 
   const toggleHospitalActive = async (h: Hospital) => {
     try {
-      const res = await fetch(API + `/api/hospitals/${h.id}`, {
+      const res = await apiFetch(`/api/hospitals/${h.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ active: !h.active }),
       })
       if (!res.ok) {
@@ -132,12 +121,11 @@ export default function AdminPanel() {
         {tab === 'users' && (
           <div className="admin-grid">
             <CreateUserForm
-              token={token || ''}
               isSuperAdmin={isSuperAdmin}
               hospitals={hospitals}
               onCreated={() => setTab('users')}
             />
-            <UserList token={token || ''} isSuperAdmin={isSuperAdmin} hospitals={hospitals} />
+            <UserList isSuperAdmin={isSuperAdmin} hospitals={hospitals} />
           </div>
         )}
 

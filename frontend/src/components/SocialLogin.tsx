@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useGoogleLogin } from '@react-oauth/google'
-import { API } from '../config'
+import { apiFetch } from '../api/client'
 
 type SocialProfile = {
   provider: string
@@ -36,9 +36,9 @@ export default function SocialLogin() {
   const handleSocialResponse = async (provider: string, token: string) => {
     setError('')
     try {
-      const res = await fetch(API + '/api/auth/social-login', {
+      const res = await apiFetch('/api/auth/social-login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        auth: false,
         body: JSON.stringify({ provider, token }),
       })
       const data = await res.json()
@@ -63,8 +63,8 @@ export default function SocialLogin() {
         localStorage.setItem('token', data.access_token)
         window.location.href = '/'
       }
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
     }
   }
 
@@ -88,9 +88,9 @@ export default function SocialLogin() {
         city: form.city,
         phone: form.phone,
       }
-      const res = await fetch(API + '/api/auth/social-register', {
+      const res = await apiFetch('/api/auth/social-register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        auth: false,
         body: JSON.stringify(body),
       })
       const data = await res.json()
@@ -99,8 +99,8 @@ export default function SocialLogin() {
       setForm(prev => ({ ...prev, email: data.email || prev.email }))
       setProfile(null)
       setVerifyEmail(data.email || form.email)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al registrar')
     }
     setSubmitting(false)
   }
@@ -128,17 +128,17 @@ export default function SocialLogin() {
     setError('')
     setVerifying(true)
     try {
-      const res = await fetch(API + '/api/auth/verify-email', {
+      const res = await apiFetch('/api/auth/verify-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        auth: false,
         body: JSON.stringify({ email: verifyEmail, code: verifyCode }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Error al verificar')
       localStorage.setItem('token', data.access_token)
       window.location.href = '/'
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al verificar')
     }
     setVerifying(false)
   }

@@ -465,8 +465,9 @@ export default function ChatApp() {
       }])
 
       setPhase('symptoms')
-    } catch (err: any) {
-      setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: `Error: ${err.message}` }])
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: `Error: ${msg}` }])
     }
     setIsSending(false)
   }
@@ -516,9 +517,11 @@ export default function ChatApp() {
         treatment: data.treatment || undefined,
       }
       setMessages(m => [...m, msg])
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: err.message || 'Error de conexión con el servidor.' }])
+    } catch (err) {
+      const isAbort = err instanceof Error && err.name === 'AbortError'
+      if (!isAbort) {
+        const msg = err instanceof Error ? err.message : 'Error de conexión con el servidor.'
+        setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: msg }])
       }
     }
     setIsSending(false)

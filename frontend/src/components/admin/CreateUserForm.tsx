@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { API } from '../../config'
+import { apiFetch } from '../../api/client'
 
 type Hospital = {
   id: string
@@ -8,13 +8,12 @@ type Hospital = {
 }
 
 type Props = {
-  token: string
   isSuperAdmin: boolean
   hospitals: Hospital[]
   onCreated: () => void
 }
 
-export default function CreateUserForm({ token, isSuperAdmin, hospitals, onCreated }: Props) {
+export default function CreateUserForm({ isSuperAdmin, hospitals, onCreated }: Props) {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
@@ -50,12 +49,8 @@ export default function CreateUserForm({ token, isSuperAdmin, hospitals, onCreat
         body.hospital_id = hospitalId
       }
 
-      const res = await fetch(API + '/api/auth/create-user', {
+      const res = await apiFetch('/api/auth/create-user', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(body),
       })
 

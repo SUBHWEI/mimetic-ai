@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { API } from '../../config'
+import { apiFetch, errorMessage } from '../../api/client'
 
 type User = {
   id: string
@@ -17,7 +17,6 @@ type Hospital = {
 }
 
 type Props = {
-  token: string
   isSuperAdmin: boolean
   hospitals: Hospital[]
 }
@@ -29,7 +28,7 @@ const ROLE_LABELS: Record<string, string> = {
   paciente: 'Paciente',
 }
 
-export default function UserList({ token, isSuperAdmin, hospitals, }: Props) {
+export default function UserList({ isSuperAdmin, hospitals, }: Props) {
   const [users, setUsers] = useState<User[]>([])
   const [roleFilter, setRoleFilter] = useState('')
   const [hospitalFilter, setHospitalFilter] = useState('')
@@ -51,11 +50,9 @@ export default function UserList({ token, isSuperAdmin, hospitals, }: Props) {
     if (roleFilter) params.set('role', roleFilter)
     if (isSuperAdmin && hospitalFilter) params.set('hospital_id', hospitalFilter)
 
-    fetch(API + '/api/auth/users?' + params.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch('/api/auth/users?' + params.toString())
       .then(async res => {
-        if (!res.ok) throw new Error('Error al cargar usuarios')
+        if (!res.ok) throw new Error(await errorMessage(res, 'Error al cargar usuarios'))
         return res.json()
       })
       .then(data => {
@@ -71,7 +68,7 @@ export default function UserList({ token, isSuperAdmin, hospitals, }: Props) {
     return () => {
       cancelled = true
     }
-  }, [token, roleFilter, hospitalFilter, isSuperAdmin])
+  }, [roleFilter, hospitalFilter, isSuperAdmin])
 
   return (
     <div className="admin-card">
