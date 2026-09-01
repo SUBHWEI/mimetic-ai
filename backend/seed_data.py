@@ -10,6 +10,12 @@ DB_NAME = os.getenv("MONGODB_DB_NAME", "mimetic_ai")
 
 symptoms = [
     {"name": "fiebre", "description": "Temperatura corporal elevada (>38°C)", "category": "generales"},
+    {"name": "cefalea", "description": "Dolor de cabeza intenso", "category": "neurologico"},
+    {"name": "dolor", "description": "Dolor localizado o generalizado", "category": "generales"},
+    {"name": "eritema", "description": "Enrojecimiento de la piel", "category": "dermatologico"},
+    {"name": "linfadenopatía", "description": "Inflamación de los ganglios linfáticos", "category": "generales"},
+    {"name": "parestesia", "description": "Hormigueo o adormecimiento", "category": "neurologico"},
+    {"name": "rinorrea", "description": "Secreción o fluido nasal", "category": "respiratorio"},
     {"name": "tos", "description": "Tos seca o productiva", "category": "respiratorio"},
     {"name": "dolor de cabeza", "description": "Cefalea o dolor craneal", "category": "neurologico"},
     {"name": "fatiga", "description": "Cansancio o debilidad general", "category": "generales"},
@@ -537,7 +543,7 @@ diseases = [
     {
         "name": "Reflujo Gastroesofágico (ERGE)",
         "description": "Retorno anormal del contenido gástrico al esófago",
-        "symptoms": ["acidez retroesternal", "regurgitación ácida", "dolor torácico", "disfagia", "tos crónica", "ronquera matutina", "sensación de globo faríngeo", "erosión dental"],
+        "symptoms": ["acidez retroesternal", "regurgitación ácida", "dolor en el pecho", "disfagia", "tos crónica", "ronquera matutina", "sensación de globo faríngeo", "erosión dental"],
         "severity": "mild",
     },
     {
@@ -913,18 +919,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -938,18 +944,18 @@ treatments = [
                 "duration": "5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["enfermedad renal grave (filtrado glomerular estimado <30 ml/min)", "enfermedad hepatica grave"],
+                                         "allergies": ["hipersensibilidad a nirmatrelvir o ritonavir"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": "Requiere ajuste de dosis en insuficiencia renal moderada (filtrado 30-59 ml/min)",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "No administrar con rifampicina, carbamazepina, fenitoina ni hierba de San Juan; revise con su medico otros medicamentos (algunas estatinas, benzodiazepinas).",
                 "monitoring": None,
                 "dosage": "300mg/100mg"
             },
@@ -963,18 +969,18 @@ treatments = [
                 "duration": "10 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["infeccion sistemica no controlada", "infeccion fungica sistemica no controlada"],
+                                         "allergies": ["hipersensibilidad a corticosteroides"],
+                                         "comorbidities": ["diabetes mellitus descontrolada (vigilar glucemia)", "hipertension arterial severa"],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "No suspender bruscamente tras uso prolongado; vigilar glucemia en diabeticos.",
                 "monitoring": None,
                 "dosage": "6mg"
             },
@@ -986,21 +992,21 @@ treatments = [
                 "max_daily_dose": "40mg",
                 "frequency": "Cada 24 horas SQ",
                 "duration": "Durante hospitalización",
-                "route": "Oral",
+                "route": "Subcutánea",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hemorragia activa significativa", "trombocitopenia inducida por heparina (actual o previa)", "hemorragia intracraneal reciente o neurocirugia", "endocarditis bacteriana aguda"],
+                                         "allergies": ["hipersensibilidad a enoxaparina o heparina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
-                "monitoring": None,
+                                   "renal": "Reducir dosis en insuficiencia renal grave",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": "En mayores de 75 anos ajustar dosis en profilaxis",
+                                   "pregnancy": "Usar con precaucion; evaluar riesgo-beneficio",
+                               },
+                "interactions_warning": "Riesgo de sangrado aumentado con otros anticoagulantes, antiagregantes y AINE.",
+                "monitoring": "Vigilar signos de sangrado y el recuento de plaquetas.",
                 "dosage": "40mg"
             },
         ],
@@ -1088,10 +1094,10 @@ treatments = [
                 "duration": "Durante cuadro",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ileo u obstruccion intestinal", "vomitos incoercibles con riesgo de aspiracion", "estado de shock"],
+                                         "allergies": [],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1113,10 +1119,10 @@ treatments = [
                 "duration": "7 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["inmunodeficiencia grave", "pancreatitis aguda grave"],
+                                         "allergies": ["hipersensibilidad a componentes del probiotico"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1138,10 +1144,10 @@ treatments = [
                 "duration": "Máx 2 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["obstruccion o ileo intestinal", "colitis ulcerosa activa en brote", "disenteria bacteriana con fiebre y heces con sangre", "colitis pseudomembranosa por antibioticos", "menores de 2 anos"],
+                                         "allergies": ["hipersensibilidad a loperamida"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1237,10 +1243,10 @@ treatments = [
                 "duration": "10 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["mononucleosis infecciosa (riesgo de exantema)"],
+                                         "allergies": ["alergia a penicilinas"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1262,18 +1268,18 @@ treatments = [
                 "duration": "5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -1285,12 +1291,12 @@ treatments = [
                 "max_daily_dose": "2 inhalaciones",
                 "frequency": "Cada 6-8 horas PRN",
                 "duration": "Según síntomas",
-                "route": "Inhalation",
+                "route": "Inhalado",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["taquiarritmias no controladas"],
+                                         "allergies": ["hipersensibilidad a salbutamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1355,10 +1361,10 @@ treatments = [
                 "duration": "7-10 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["mononucleosis infecciosa (riesgo de exantema)"],
+                                         "allergies": ["alergia a penicilinas"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1380,18 +1386,18 @@ treatments = [
                 "duration": "5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa o hemorragia gastrointestinal", "insuficiencia renal grave (filtrado <30 ml/min)", "tercer trimestre del embarazo", "asma sensible a AINE"],
+                                         "allergies": ["hipersensibilidad a ibuprofeno u otros AINE"],
+                                         "comorbidities": ["insuficiencia cardiaca significativa", "diatesis hemorragica"],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": "Menor dosis y menor duracion en adultos mayores",
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Aumento del riesgo de sangrado con anticoagulantes, antiagregantes y corticosteroides.",
                 "monitoring": None,
                 "dosage": "400mg"
             },
@@ -1403,12 +1409,12 @@ treatments = [
                 "max_daily_dose": "3 gotas",
                 "frequency": "Cada 8 horas",
                 "duration": "7 días",
-                "route": "Otic",
+                "route": "Ótico",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["perforacion timpanica (riesgo de ototoxicidad segun el componente)"],
+                                         "allergies": ["hipersensibilidad al principio activo de las gotas"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1506,10 +1512,10 @@ treatments = [
                 "duration": "1 dosis",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a fosfomicina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1531,18 +1537,18 @@ treatments = [
                 "duration": "3 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa o hemorragia gastrointestinal", "insuficiencia renal grave (filtrado <30 ml/min)", "tercer trimestre del embarazo", "asma sensible a AINE"],
+                                         "allergies": ["hipersensibilidad a ibuprofeno u otros AINE"],
+                                         "comorbidities": ["insuficiencia cardiaca significativa", "diatesis hemorragica"],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": "Menor dosis y menor duracion en adultos mayores",
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Aumento del riesgo de sangrado con anticoagulantes, antiagregantes y corticosteroides.",
                 "monitoring": None,
                 "dosage": "400mg"
             },
@@ -1599,10 +1605,10 @@ treatments = [
                 "duration": "5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1610,7 +1616,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -1624,10 +1630,10 @@ treatments = [
                 "duration": "Durante cuadro",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ileo u obstruccion intestinal", "vomitos incoercibles con riesgo de aspiracion", "estado de shock"],
+                                         "allergies": [],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1725,10 +1731,10 @@ treatments = [
                 "duration": "14 días",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hiperbilirrubinemia neonatal"],
+                                         "allergies": ["hipersensibilidad a cefalosporinas", "alergia grave a penicilinas (reaccion anafilactica)"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1750,10 +1756,10 @@ treatments = [
                 "duration": "4 días",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["infeccion sistemica no controlada", "infeccion fungica sistemica no controlada"],
+                                         "allergies": ["hipersensibilidad a corticosteroides"],
+                                         "comorbidities": ["diabetes mellitus descontrolada (vigilar glucemia)", "hipertension arterial severa"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -1761,7 +1767,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "No suspender bruscamente tras uso prolongado; vigilar glucemia en diabeticos.",
                 "monitoring": None,
                 "dosage": "0.15mg/kg"
             },
@@ -1775,18 +1781,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -1951,18 +1957,18 @@ treatments = [
                 "duration": "5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -1974,12 +1980,12 @@ treatments = [
                 "max_daily_dose": "2 inhalaciones",
                 "frequency": "Cada 6-8 horas PRN",
                 "duration": "Según síntomas",
-                "route": "Inhalation",
+                "route": "Inhalado",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["taquiarritmias no controladas"],
+                                         "allergies": ["hipersensibilidad a salbutamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2001,10 +2007,10 @@ treatments = [
                 "duration": "7 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["broncoespasmo grave (precaucion en asmaticos)"],
+                                         "allergies": ["hipersensibilidad a acetilcisteina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2101,10 +2107,10 @@ treatments = [
                 "duration": "7-10 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["mononucleosis infecciosa (riesgo de exantema)"],
+                                         "allergies": ["alergia a penicilinas"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2126,18 +2132,18 @@ treatments = [
                 "duration": "5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa o hemorragia gastrointestinal", "insuficiencia renal grave (filtrado <30 ml/min)", "tercer trimestre del embarazo", "asma sensible a AINE"],
+                                         "allergies": ["hipersensibilidad a ibuprofeno u otros AINE"],
+                                         "comorbidities": ["insuficiencia cardiaca significativa", "diatesis hemorragica"],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": "Menor dosis y menor duracion en adultos mayores",
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Aumento del riesgo de sangrado con anticoagulantes, antiagregantes y corticosteroides.",
                 "monitoring": None,
                 "dosage": "400mg"
             },
@@ -2151,10 +2157,10 @@ treatments = [
                 "duration": "5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": [],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2251,10 +2257,10 @@ treatments = [
                 "duration": "Según temporada",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a loratadina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2276,10 +2282,10 @@ treatments = [
                 "duration": "Durante exposición",
                 "route": "Nasal",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["infeccion nasal no tratada"],
+                                         "allergies": ["hipersensibilidad a budesonida"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2344,10 +2350,10 @@ treatments = [
                 "duration": "Durante cuadro",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ileo u obstruccion intestinal", "vomitos incoercibles con riesgo de aspiracion", "estado de shock"],
+                                         "allergies": [],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2369,10 +2375,10 @@ treatments = [
                 "duration": "7 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["inmunodeficiencia grave", "pancreatitis aguda grave"],
+                                         "allergies": ["hipersensibilidad a componentes del probiotico"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2437,10 +2443,10 @@ treatments = [
                 "duration": "6 meses",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ictericia previa con rifampicina", "porfiria"],
+                                         "allergies": ["hipersensibilidad a rifampicina"],
+                                         "comorbidities": ["hepatopatia grave"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2448,8 +2454,8 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
-                "monitoring": None,
+                "interactions_warning": "Potente inductor enzimatico: puede reducir la eficacia de anticonceptivos, warfarina y otros medicamentos.",
+                "monitoring": "Vigilar funcion hepatica.",
                 "dosage": "600mg"
             },
             # ---
@@ -2462,10 +2468,10 @@ treatments = [
                 "duration": "6 meses",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hepatopatia aguda", "neuropatia periferica previa por isoniacida"],
+                                         "allergies": ["hipersensibilidad a isoniacida"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2473,8 +2479,8 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
-                "monitoring": None,
+                "interactions_warning": "El alcohol aumenta la hepatotoxicidad.",
+                "monitoring": "Vigilar funcion hepatica.",
                 "dosage": "300mg"
             },
             # ---
@@ -2487,10 +2493,10 @@ treatments = [
                 "duration": "2 meses",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hepatopatia grave"],
+                                         "allergies": ["hipersensibilidad a pirazinamida"],
+                                         "comorbidities": ["gota (hiperuricemia)"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2499,7 +2505,7 @@ treatments = [
           "pregnancy": None
         },
                 "interactions_warning": None,
-                "monitoring": None,
+                "monitoring": "Vigilar acido urico y funcion hepatica.",
                 "dosage": "1500mg"
             },
             # ---
@@ -2512,19 +2518,19 @@ treatments = [
                 "duration": "2 meses",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["neuritis optica"],
+                                         "allergies": ["hipersensibilidad a etambutol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
                 "interactions_warning": None,
-                "monitoring": None,
+                "monitoring": "Vigilar agudeza visual y campos visuales.",
                 "dosage": "800mg"
             },
         ],
@@ -2612,10 +2618,10 @@ treatments = [
                 "duration": "5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["tendinopatia o ruptura tendinosa previa por quinolonas", "miastenia gravis", "embarazo y lactancia (evitar)", "menores de 18 anos (evitar como primera linea)"],
+                                         "allergies": ["hipersensibilidad a fluoroquinolonas"],
+                                         "comorbidities": ["prolongacion del intervalo QT", "epilepsia"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2623,7 +2629,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Evitar antiacidos, hierro, calcio y zinc cerca de la toma; el uso de corticosteroides aumenta el riesgo de tendinopatia.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -2637,10 +2643,10 @@ treatments = [
                 "duration": "Durante cuadro",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ileo u obstruccion intestinal", "vomitos incoercibles con riesgo de aspiracion", "estado de shock"],
+                                         "allergies": [],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2662,10 +2668,10 @@ treatments = [
                 "duration": "7 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["inmunodeficiencia grave", "pancreatitis aguda grave"],
+                                         "allergies": ["hipersensibilidad a componentes del probiotico"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2730,10 +2736,10 @@ treatments = [
                 "duration": "1 dosis",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa", "hemorragia gastrointestinal activa", "hemofilia u otro trastorno de la coagulacion", "tercer trimestre del embarazo"],
+                                         "allergies": ["hipersensibilidad a acido acetilsalicilico u otros AINE", "asma sensible a AINE"],
+                                         "comorbidities": ["diatesis hemorragica"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2755,10 +2761,10 @@ treatments = [
                 "duration": "Durante dolor",
                 "route": "Sublingual",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["uso de sildenafil, tadalafil o vardenafil en las ultimas 24-48 horas", "hipotension grave", "shock", "estenosis aortica critica", "miocardiopatia hipertrofica obstructiva", "taponamiento pericardico"],
+                                         "allergies": ["hipersensibilidad a nitratos"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2766,7 +2772,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "No combinar con sildenafil, tadalafil o vardenafil.",
                 "monitoring": None,
                 "dosage": "0.5mg"
             },
@@ -2780,10 +2786,10 @@ treatments = [
                 "duration": "1 dosis",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["sangrado activo patologico (ulcera hemorragica, hemorragia intracraneal)"],
+                                         "allergies": ["hipersensibilidad a clopidogrel"],
+                                         "comorbidities": ["enfermedad hepatica grave"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2791,7 +2797,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Evitar omeprazol y esomeprazol; riesgo de sangrado con AINE e ibuprofeno.",
                 "monitoring": None,
                 "dosage": "300mg"
             },
@@ -2805,10 +2811,10 @@ treatments = [
                 "duration": "Durante hospitalización",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hemorragia activa", "trombocitopenia inducida por heparina (actual o previa)", "hemorragia intracraneal reciente", "cirugia cerebral, ocular o espinal reciente"],
+                                         "allergies": ["hipersensibilidad a heparina"],
+                                         "comorbidities": ["trombocitopenia grave", "coagulopatia grave"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2816,8 +2822,8 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
-                "monitoring": None,
+                "interactions_warning": "Riesgo de sangrado con antiagregantes, anticoagulantes, AINE y tromboliticos.",
+                "monitoring": "Controlar aPTT y recuento de plaquetas.",
                 "dosage": "60 UI/kg"
             },
             # ---
@@ -2830,10 +2836,10 @@ treatments = [
                 "duration": "Durante dolor severo",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["depresion respiratoria", "ileo paralitico", "obstruccion intestinal", "asma aguda grave", "hipersensibilidad a opioides"],
+                                         "allergies": ["hipersensibilidad a morfina u opioides"],
+                                         "comorbidities": ["insuficiencia renal o hepatica grave"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2841,8 +2847,8 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
-                "monitoring": None,
+                "interactions_warning": "El alcohol y los sedantes aumentan la depresion respiratoria.",
+                "monitoring": "Vigilar nivel de conciencia y frecuencia respiratoria.",
                 "dosage": "2-4mg"
             },
         ],
@@ -2898,17 +2904,17 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["anuria", "hipovolemia o deshidratacion grave", "hipopotasemia grave"],
+                                         "allergies": ["hipersensibilidad a furosemida o sulfonamidas"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
                 "interactions_warning": None,
                 "monitoring": None,
                 "dosage": "40mg"
@@ -2923,10 +2929,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["embarazo (segundo y tercer trimestre)", "angioedema previo por IECA", "hiperpotasemia"],
+                                         "allergies": ["hipersensibilidad a IECA"],
+                                         "comorbidities": ["estenosis bilateral de la arteria renal"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2948,10 +2954,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["asma o broncoespasmo", "bloqueo AV de segundo o tercer grado", "bradicardia sintomatica", "insuficiencia cardiaca descompensada refractaria", "enfermedad hepatica grave"],
+                                         "allergies": ["hipersensibilidad a carvedilol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2973,10 +2979,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hiperpotasemia", "insuficiencia renal grave (filtrado <30 ml/min)", "enfermedad de Addison", "embarazo"],
+                                         "allergies": ["hipersensibilidad a espironolactona"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -2984,7 +2990,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "La asociacion con IECA, ARA-II o suplementos de potasio aumenta el riesgo de hiperpotasemia.",
                 "monitoring": None,
                 "dosage": "25mg"
             },
@@ -3041,10 +3047,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["embarazo (segundo y tercer trimestre)", "hiperpotasemia"],
+                                         "allergies": ["hipersensibilidad a losartan u otros ARA-II"],
+                                         "comorbidities": ["estenosis bilateral de la arteria renal"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3066,10 +3072,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["anuria"],
+                                         "allergies": ["hipersensibilidad a tiazidas o sulfonamidas"],
+                                         "comorbidities": ["gota", "hiponatremia"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3134,19 +3140,19 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia renal grave (filtrado <30 ml/min)", "acidosis lactica previa", "hipoxia o sepsis"],
+                                         "allergies": ["hipersensibilidad a metformina"],
+                                         "comorbidities": ["insuficiencia hepatica grave", "consumo excesivo de alcohol"],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
-                "monitoring": None,
+                                   "renal": "No usar si el filtrado es <30 ml/min; evaluar dosis entre 30-45 ml/min",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Suspender temporalmente antes de estudios con contraste yodado y verificar funcion renal.",
+                "monitoring": "Vigilar funcion renal periodicamente.",
                 "dosage": "850mg"
             },
             # ---
@@ -3159,18 +3165,18 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["cetoacidosis diabetica", "insuficiencia renal grave", "insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad a sulfonilureas o sulfonamidas"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": "Riesgo aumentado de hipoglucemia en adultos mayores",
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y los AINE pueden aumentar el riesgo de hipoglucemia.",
                 "monitoring": None,
                 "dosage": "5mg"
             },
@@ -3226,10 +3232,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["tirotoxicosis no corregida", "insuficiencia suprarrenal no tratada", "infarto agudo de miocardio"],
+                                         "allergies": ["hipersensibilidad a levotiroxina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3293,10 +3299,10 @@ treatments = [
                 "duration": "12-18 meses",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["agranulocitosis o neutropenia previa", "primer trimestre del embarazo (preferir alternativa)"],
+                                         "allergies": ["hipersensibilidad a metimazol o tiouracilos"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3305,7 +3311,7 @@ treatments = [
           "pregnancy": None
         },
                 "interactions_warning": None,
-                "monitoring": None,
+                "monitoring": "Control periodico de hemograma por riesgo de agranulocitosis.",
                 "dosage": "15-30mg"
             },
             # ---
@@ -3318,10 +3324,10 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["asma", "bradicardia severa", "bloqueo AV de segundo o tercer grado", "shock cardiogenico", "insuficiencia cardiaca descompensada"],
+                                         "allergies": ["hipersensibilidad a betabloqueantes"],
+                                         "comorbidities": ["enfermedad vascular periferica grave"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3329,7 +3335,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "No suspender bruscamente; precaucion con verapamilo y diltiazem.",
                 "monitoring": None,
                 "dosage": "40mg"
             },
@@ -3386,18 +3392,18 @@ treatments = [
                 "duration": "Durante crisis",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa o hemorragia gastrointestinal", "insuficiencia renal grave (filtrado <30 ml/min)", "tercer trimestre del embarazo", "asma sensible a AINE"],
+                                         "allergies": ["hipersensibilidad a ibuprofeno u otros AINE"],
+                                         "comorbidities": ["insuficiencia cardiaca significativa", "diatesis hemorragica"],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": "Menor dosis y menor duracion en adultos mayores",
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Aumento del riesgo de sangrado con anticoagulantes, antiagregantes y corticosteroides.",
                 "monitoring": None,
                 "dosage": "400mg"
             },
@@ -3411,10 +3417,10 @@ treatments = [
                 "duration": "Durante crisis",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["cardiopatia isquemica o vasoespasmo coronario", "infarto de miocardio, ACV o AIT recientes", "hipertension arterial no controlada", "migrana hemiplejica o basilar", "insuficiencia renal o hepatica grave"],
+                                         "allergies": ["hipersensibilidad a triptanes"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3422,7 +3428,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "No combinar con ergotaminas ni IMAO; riesgo de sindrome serotoninergico con ISRS/IRSN.",
                 "monitoring": None,
                 "dosage": "50mg"
             },
@@ -3436,10 +3442,10 @@ treatments = [
                 "duration": "Durante crisis",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["feocromocitoma", "obstruccion o perforacion gastrointestinal", "enfermedad de Parkinson", "epilepsia (precaucion)"],
+                                         "allergies": ["hipersensibilidad a metoclopramida"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3447,7 +3453,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Uso prolongado mayor a 5 dias eleva el riesgo de discinesia tardia.",
                 "monitoring": None,
                 "dosage": "10mg"
             },
@@ -3504,10 +3510,10 @@ treatments = [
                 "duration": "1 dosis",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hemorragia intracraneal previa o activa", "ACV isquemico en los ultimos 3 meses", "cirugia mayor o traumatismo craneal en los ultimos 3 meses", "sangrado interno activo", "presion arterial >185/110 mmHg no controlable", "trombocitopenia o coagulopatia grave"],
+                                         "allergies": ["hipersensibilidad a alteplasa"],
+                                         "comorbidities": ["endocarditis bacteriana", "aneurisma o malformacion arteriovenosa cerebral"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3515,8 +3521,8 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
-                "monitoring": None,
+                "interactions_warning": "Riesgo de sangrado grave con anticoagulantes, antiagregantes y heparinoides.",
+                "monitoring": "Vigilar signos neurologicos y hemorragicos; control estricto de presion arterial.",
                 "dosage": "0.9mg/kg IV"
             },
             # ---
@@ -3529,10 +3535,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa", "hemorragia gastrointestinal activa", "hemofilia u otro trastorno de la coagulacion", "tercer trimestre del embarazo"],
+                                         "allergies": ["hipersensibilidad a acido acetilsalicilico u otros AINE", "asma sensible a AINE"],
+                                         "comorbidities": ["diatesis hemorragica"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3554,10 +3560,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["sangrado activo patologico (ulcera hemorragica, hemorragia intracraneal)"],
+                                         "allergies": ["hipersensibilidad a clopidogrel"],
+                                         "comorbidities": ["enfermedad hepatica grave"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3565,7 +3571,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Evitar omeprazol y esomeprazol; riesgo de sangrado con AINE e ibuprofeno.",
                 "monitoring": None,
                 "dosage": "75mg"
             },
@@ -3579,10 +3585,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["enfermedad hepatica activa o transaminasas elevadas persistentes", "embarazo y lactancia"],
+                                         "allergies": ["hipersensibilidad a estatinas"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3590,7 +3596,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Riesgo de miopatia con fibratos, ciclosporina, claritromicina y antifungicos azolicos.",
                 "monitoring": None,
                 "dosage": "40mg"
             },
@@ -3647,10 +3653,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hepatopatia aguda o grave", "trastorno mitocondrial documentado (p. ej. sindrome POLG)", "pancreatitis previa", "embarazo (teratogeno; requiere evaluacion estricta)"],
+                                         "allergies": ["hipersensibilidad a valproato"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3659,7 +3665,7 @@ treatments = [
           "pregnancy": None
         },
                 "interactions_warning": None,
-                "monitoring": None,
+                "monitoring": "Control de funcion hepatica y hemograma.",
                 "dosage": "500mg"
             },
             # ---
@@ -3672,17 +3678,17 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a levetiracetam"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
                 "interactions_warning": None,
                 "monitoring": None,
                 "dosage": "500mg"
@@ -3742,10 +3748,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["glaucoma de angulo estrecho", "melanoma maligno (precaucion)"],
+                                         "allergies": ["hipersensibilidad a levodopa o carbidopa"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3753,7 +3759,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "No combinar con IMAO no selectivos.",
                 "monitoring": None,
                 "dosage": "250/25mg"
             },
@@ -3767,17 +3773,17 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a pramipexol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
                 "interactions_warning": None,
                 "monitoring": None,
                 "dosage": "0.25mg"
@@ -3837,19 +3843,19 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["embarazo y lactancia", "insuficiencia hepatica significativa", "insuficiencia renal significativa", "inmunodeficiencia", "ulcera peptica activa", "discrasias sanguineas"],
+                                         "allergies": ["hipersensibilidad a metotrexato"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
-                "monitoring": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El uso con AINE y trimetoprim-sulfametoxazol aumenta la toxicidad; es necesario suplementar acido folico.",
+                "monitoring": "Hemograma, funcion hepatica y renal periodicos.",
                 "dosage": "7.5-15mg"
             },
             # ---
@@ -3862,10 +3868,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad al acido folico"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3887,10 +3893,10 @@ treatments = [
                 "duration": "Dosis descendente",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["infeccion sistemica no controlada", "infeccion fungica sistemica no controlada"],
+                                         "allergies": ["hipersensibilidad a corticosteroides"],
+                                         "comorbidities": ["diabetes mellitus descontrolada (vigilar glucemia)", "hipertension arterial severa"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3912,18 +3918,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa o hemorragia gastrointestinal", "insuficiencia renal grave (filtrado <30 ml/min)", "tercer trimestre del embarazo", "asma sensible a AINE"],
+                                         "allergies": ["hipersensibilidad a ibuprofeno u otros AINE"],
+                                         "comorbidities": ["insuficiencia cardiaca significativa", "diatesis hemorragica"],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": "Menor dosis y menor duracion en adultos mayores",
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Aumento del riesgo de sangrado con anticoagulantes, antiagregantes y corticosteroides.",
                 "monitoring": None,
                 "dosage": "400mg"
             },
@@ -3980,10 +3986,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["retinopatia previa", "hipersensibilidad a 4-aminoquinolinas"],
+                                         "allergies": ["hipersensibilidad a hidroxicloroquina"],
+                                         "comorbidities": ["psoriasis (puede exacerbarse)"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -3992,7 +3998,7 @@ treatments = [
           "pregnancy": None
         },
                 "interactions_warning": None,
-                "monitoring": None,
+                "monitoring": "Evaluacion oftalmologica periodica por riesgo de retinopatia.",
                 "dosage": "200mg"
             },
             # ---
@@ -4005,10 +4011,10 @@ treatments = [
                 "duration": "Según actividad",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["infeccion sistemica no controlada", "infeccion fungica sistemica no controlada"],
+                                         "allergies": ["hipersensibilidad a corticosteroides"],
+                                         "comorbidities": ["diabetes mellitus descontrolada (vigilar glucemia)", "hipertension arterial severa"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4030,10 +4036,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["embarazo y lactancia (teratogeno)", "infeccion activa"],
+                                         "allergies": ["hipersensibilidad a micofenolato"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4041,7 +4047,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Evitar la combinacion con azatioprina; aumenta el riesgo de infecciones.",
                 "monitoring": None,
                 "dosage": "1g"
             },
@@ -4098,10 +4104,10 @@ treatments = [
                 "duration": "3 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["primer trimestre del embarazo", "prolongacion del intervalo QT"],
+                                         "allergies": ["hipersensibilidad a artemeter o lumefantrina"],
+                                         "comorbidities": ["cardiopatia con QT prolongado"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4109,7 +4115,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Evitar farmacos que prolongan el intervalo QT e inductores de CYP3A4 (rifampicina, algunos antifungicos).",
                 "monitoring": None,
                 "dosage": "4 comprimidos"
             },
@@ -4123,18 +4129,18 @@ treatments = [
                 "duration": "5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -4191,10 +4197,10 @@ treatments = [
                 "duration": "7-10 días",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hiperbilirrubinemia neonatal"],
+                                         "allergies": ["hipersensibilidad a cefalosporinas", "alergia grave a penicilinas (reaccion anafilactica)"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4216,10 +4222,10 @@ treatments = [
                 "duration": "7 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hepatopatia grave"],
+                                         "allergies": ["hipersensibilidad a macrolidos"],
+                                         "comorbidities": ["prolongacion del intervalo QT"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4227,7 +4233,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Riesgo de prolongacion del intervalo QT con antiarritmicos y antipsicoticos.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -4241,18 +4247,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -4309,10 +4315,10 @@ treatments = [
                 "duration": "5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4320,7 +4326,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -4332,12 +4338,12 @@ treatments = [
                 "max_daily_dose": "Tópica",
                 "frequency": "Cada 6 horas PRN",
                 "duration": "Según necesidad",
-                "route": "Topical",
+                "route": "Tópico",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a calamina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4359,17 +4365,17 @@ treatments = [
                 "duration": "7 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a aciclovir"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
                 "interactions_warning": None,
                 "monitoring": None,
                 "dosage": "800mg"
@@ -4427,17 +4433,17 @@ treatments = [
                 "duration": "7-10 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a aciclovir"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
                 "interactions_warning": None,
                 "monitoring": None,
                 "dosage": "800mg"
@@ -4452,18 +4458,18 @@ treatments = [
                 "duration": "Según dolor",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a gabapentina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Aumenta el efecto sedante con alcohol y otros depresores del sistema nervioso central.",
                 "monitoring": None,
                 "dosage": "300mg"
             },
@@ -4477,18 +4483,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -4500,12 +4506,12 @@ treatments = [
                 "max_daily_dose": "1 parche",
                 "frequency": "Cada 12 horas",
                 "duration": "Durante dolor agudo",
-                "route": "Topical",
+                "route": "Tópico",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hipersensibilidad a anestesicos locales tipo amida", "piel danada o infeccion en la zona de aplicacion"],
+                                         "allergies": ["hipersensibilidad a lidocaina o anestesicos amida"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4570,19 +4576,19 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a tenofovir"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
                 "interactions_warning": None,
-                "monitoring": None,
+                "monitoring": "Vigilar funcion renal y densidad osea.",
                 "dosage": "300mg"
             },
             # ---
@@ -4595,17 +4601,17 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a emtricitabina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
                 "interactions_warning": None,
                 "monitoring": None,
                 "dosage": "200mg"
@@ -4620,10 +4626,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a dolutegravir"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4631,7 +4637,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "No combinar con dofetilida; precaucion con rifampicina y metformina.",
                 "monitoring": None,
                 "dosage": "50mg"
             },
@@ -4688,18 +4694,18 @@ treatments = [
                 "duration": "5-7 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -4713,18 +4719,18 @@ treatments = [
                 "duration": "5-7 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa o hemorragia gastrointestinal", "insuficiencia renal grave (filtrado <30 ml/min)", "tercer trimestre del embarazo", "asma sensible a AINE"],
+                                         "allergies": ["hipersensibilidad a ibuprofeno u otros AINE"],
+                                         "comorbidities": ["insuficiencia cardiaca significativa", "diatesis hemorragica"],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": "Menor dosis y menor duracion en adultos mayores",
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Aumento del riesgo de sangrado con anticoagulantes, antiagregantes y corticosteroides.",
                 "monitoring": None,
                 "dosage": "400mg"
             },
@@ -4781,10 +4787,10 @@ treatments = [
                 "duration": "7 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["embarazo", "ninos menores de 8 anos (afecta el esmalte dental)"],
+                                         "allergies": ["hipersensibilidad a tetraciclinas"],
+                                         "comorbidities": ["hepatopatia"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4792,7 +4798,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "La exposicion solar aumenta la fotosensibilidad.",
                 "monitoring": None,
                 "dosage": "100mg"
             },
@@ -4806,10 +4812,10 @@ treatments = [
                 "duration": "7 días",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hiperbilirrubinemia neonatal"],
+                                         "allergies": ["hipersensibilidad a cefalosporinas", "alergia grave a penicilinas (reaccion anafilactica)"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4831,18 +4837,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -4899,10 +4905,10 @@ treatments = [
                 "duration": "6 semanas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["embarazo", "ninos menores de 8 anos (afecta el esmalte dental)"],
+                                         "allergies": ["hipersensibilidad a tetraciclinas"],
+                                         "comorbidities": ["hepatopatia"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4910,7 +4916,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "La exposicion solar aumenta la fotosensibilidad.",
                 "monitoring": None,
                 "dosage": "100mg"
             },
@@ -4924,10 +4930,10 @@ treatments = [
                 "duration": "6 semanas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ictericia previa con rifampicina", "porfiria"],
+                                         "allergies": ["hipersensibilidad a rifampicina"],
+                                         "comorbidities": ["hepatopatia grave"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -4935,8 +4941,8 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
-                "monitoring": None,
+                "interactions_warning": "Potente inductor enzimatico: puede reducir la eficacia de anticonceptivos, warfarina y otros medicamentos.",
+                "monitoring": "Vigilar funcion hepatica.",
                 "dosage": "600mg"
             },
             # ---
@@ -4949,18 +4955,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -5015,12 +5021,12 @@ treatments = [
                 "max_daily_dose": "2 inhalaciones",
                 "frequency": "Cada 4-6 horas PRN",
                 "duration": "Durante crisis",
-                "route": "Inhalation",
+                "route": "Inhalado",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["taquiarritmias no controladas"],
+                                         "allergies": ["hipersensibilidad a salbutamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5040,12 +5046,12 @@ treatments = [
                 "max_daily_dose": "2 inhalaciones",
                 "frequency": "Cada 12 horas",
                 "duration": "Crónico",
-                "route": "Inhalation",
+                "route": "Inhalado",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a budesonida"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5067,10 +5073,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a montelukast"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5078,7 +5084,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Notificar cambios de animo o comportamiento (posibles efectos neuropsiquiatricos).",
                 "monitoring": None,
                 "dosage": "10mg"
             },
@@ -5133,12 +5139,12 @@ treatments = [
                 "max_daily_dose": "2 inhalaciones",
                 "frequency": "Cada 4-6 horas PRN",
                 "duration": "Crónico",
-                "route": "Inhalation",
+                "route": "Inhalado",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["taquiarritmias no controladas"],
+                                         "allergies": ["hipersensibilidad a salbutamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5158,12 +5164,12 @@ treatments = [
                 "max_daily_dose": "1 inhalación",
                 "frequency": "Cada 24 horas",
                 "duration": "Crónico",
-                "route": "Inhalation",
+                "route": "Inhalado",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["glaucoma de angulo estrecho", "retencion urinaria (hiperplasia prostatica significativa)"],
+                                         "allergies": ["hipersensibilidad a tiotropio, atropina o ipratropio"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5183,12 +5189,12 @@ treatments = [
                 "max_daily_dose": "2 inhalaciones",
                 "frequency": "Cada 12 horas",
                 "duration": "Crónico",
-                "route": "Inhalation",
+                "route": "Inhalado",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a fluticasona o salmeterol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5196,7 +5202,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "No es para el alivio inmediato de una crisis; enjuagar la boca tras cada uso.",
                 "monitoring": None,
                 "dosage": "2 inhalaciones"
             },
@@ -5208,12 +5214,12 @@ treatments = [
                 "max_daily_dose": "1-2L/min",
                 "frequency": "≥16 horas/día",
                 "duration": "Crónico si PaO2 <55mmHg",
-                "route": "Oral",
+                "route": "Inhalado",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": [],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5310,18 +5316,18 @@ treatments = [
                 "duration": "3-5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -5335,18 +5341,18 @@ treatments = [
                 "duration": "3-5 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa o hemorragia gastrointestinal", "insuficiencia renal grave (filtrado <30 ml/min)", "tercer trimestre del embarazo", "asma sensible a AINE"],
+                                         "allergies": ["hipersensibilidad a ibuprofeno u otros AINE"],
+                                         "comorbidities": ["insuficiencia cardiaca significativa", "diatesis hemorragica"],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": "Menor dosis y menor duracion en adultos mayores",
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Aumento del riesgo de sangrado con anticoagulantes, antiagregantes y corticosteroides.",
                 "monitoring": None,
                 "dosage": "400mg"
             },
@@ -5403,10 +5409,10 @@ treatments = [
                 "duration": "Hasta cirugía",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hiperbilirrubinemia neonatal"],
+                                         "allergies": ["hipersensibilidad a cefalosporinas", "alergia grave a penicilinas (reaccion anafilactica)"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5428,10 +5434,10 @@ treatments = [
                 "duration": "Hasta cirugía",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["primer trimestre del embarazo (evitar en lo posible)"],
+                                         "allergies": ["hipersensibilidad a metronidazol o nitroimidazoles"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5439,7 +5445,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Evitar el consumo de alcohol durante el tratamiento y 48 h despues (efecto disulfiram).",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -5451,12 +5457,12 @@ treatments = [
                 "max_daily_dose": "50mg",
                 "frequency": "Cada 8 horas PRN",
                 "duration": "Hasta cirugía",
-                "route": "Oral",
+                "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["epilepsia no controlada", "depresion respiratoria aguda", "uso de IMAO"],
+                                         "allergies": ["hipersensibilidad a opioides"],
+                                         "comorbidities": ["insuficiencia renal o hepatica grave"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5464,7 +5470,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Riesgo de sindrome serotoninergico con ISRS, IRSN y antidepresivos.",
                 "monitoring": None,
                 "dosage": "50mg"
             },
@@ -5521,10 +5527,10 @@ treatments = [
                 "duration": "Hasta cirugía",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hiperbilirrubinemia neonatal"],
+                                         "allergies": ["hipersensibilidad a cefalosporinas", "alergia grave a penicilinas (reaccion anafilactica)"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5546,10 +5552,10 @@ treatments = [
                 "duration": "Hasta cirugía",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["primer trimestre del embarazo (evitar en lo posible)"],
+                                         "allergies": ["hipersensibilidad a metronidazol o nitroimidazoles"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5557,7 +5563,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Evitar el consumo de alcohol durante el tratamiento y 48 h despues (efecto disulfiram).",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -5571,10 +5577,10 @@ treatments = [
                 "duration": "Durante dolor",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["glaucoma de angulo estrecho", "retencion urinaria", "obstruccion intestinal mecanica", "taquiarritmias", "miastenia gravis"],
+                                         "allergies": ["hipersensibilidad a hioscina o anticolinergicos"],
+                                         "comorbidities": ["megaesofago o estenosis pilorica"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5596,18 +5602,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -5695,10 +5701,10 @@ treatments = [
                 "duration": "8 semanas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a inhibidores de la bomba de protones"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5720,10 +5726,10 @@ treatments = [
                 "duration": "14 días (si H. pylori)",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["mononucleosis infecciosa (riesgo de exantema)"],
+                                         "allergies": ["alergia a penicilinas"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5745,10 +5751,10 @@ treatments = [
                 "duration": "14 días (si H. pylori)",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a claritromicina o macrolidos"],
+                                         "comorbidities": ["prolongacion del intervalo QT"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5756,7 +5762,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "No combinar con colchicina ni con estatinas de alto riesgo; riesgo de QT prolongado con antiarritmicos.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -5770,10 +5776,10 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia renal grave (riesgo de acumulacion de aluminio)"],
+                                         "allergies": ["hipersensibilidad al hidroxido de aluminio"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5838,10 +5844,10 @@ treatments = [
                 "duration": "8 semanas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a inhibidores de la bomba de protones"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5863,10 +5869,10 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia renal grave"],
+                                         "allergies": ["hipersensibilidad a almagato"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5931,10 +5937,10 @@ treatments = [
                 "duration": "Durante dolor",
                 "route": "IM",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa", "hemorragia gastrointestinal", "insuficiencia renal grave", "tercer trimestre del embarazo", "asma sensible a AINE", "insuficiencia cardiaca grave"],
+                                         "allergies": ["hipersensibilidad a diclofenaco u otros AINE"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5942,7 +5948,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Riesgo de nefrotoxicidad con diureticos e IECA.",
                 "monitoring": None,
                 "dosage": "75mg"
             },
@@ -5956,10 +5962,10 @@ treatments = [
                 "duration": "Durante dolor",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["glaucoma de angulo estrecho", "retencion urinaria", "obstruccion intestinal mecanica", "taquiarritmias", "miastenia gravis"],
+                                         "allergies": ["hipersensibilidad a hioscina o anticolinergicos"],
+                                         "comorbidities": ["megaesofago o estenosis pilorica"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -5981,18 +5987,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -6006,10 +6012,10 @@ treatments = [
                 "duration": "Hasta expulsión del cálculo",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a tamsulosina"],
+                                         "comorbidities": ["hipotension ortostatica"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6074,10 +6080,10 @@ treatments = [
                 "duration": "Según respuesta",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["anuria", "hipovolemia o deshidratacion grave", "hipopotasemia grave"],
+                                         "allergies": ["hipersensibilidad a furosemida o sulfonamidas"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6099,10 +6105,10 @@ treatments = [
                 "duration": "Hasta corregir hiperkalemia",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ileo u obstruccion intestinal", "antecedente reciente de cirugia gastrointestinal (riesgo de necrosis colonica)", "hipernatremia"],
+                                         "allergies": ["hipersensibilidad a poliestireno sulfonato sodico"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6124,10 +6130,10 @@ treatments = [
                 "duration": "1 dosis",
                 "route": "IV",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["alcalosis metabolica", "hipopotasemia no corregida", "hipernatremia", "hipocalcemia"],
+                                         "allergies": [],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6192,10 +6198,10 @@ treatments = [
                 "duration": "7-10 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["mononucleosis infecciosa (riesgo de exantema)"],
+                                         "allergies": ["alergia a penicilinas"],
+                                         "comorbidities": ["antecedente de disfuncion hepatica con amoxicilina/clavulanico"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6217,10 +6223,10 @@ treatments = [
                 "duration": "7-10 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a clindamicina"],
+                                         "comorbidities": ["enfermedad inflamatoria intestinal", "colitis previa por Clostridium difficile"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6228,7 +6234,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Riesgo de colitis pseudomembranosa con uso prolongado.",
                 "monitoring": None,
                 "dosage": "300mg"
             },
@@ -6242,18 +6248,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -6266,7 +6272,7 @@ treatments = [
                 "max_daily_dose": None,
                 "frequency": "Cada 12 horas",
                 "duration": "7-14 dias",
-                "route": "Topica",
+                "route": "Tópico",
                 "contraindications": {
           "conditions": [
             "Infeccion cutanea no tratada"
@@ -6311,17 +6317,17 @@ treatments = [
                 "duration": "7-14 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a cetirizina o hidroxizina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
                 "interactions_warning": None,
                 "monitoring": None,
                 "dosage": "10mg"
@@ -6336,10 +6342,10 @@ treatments = [
                 "duration": "7-14 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a loratadina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6361,10 +6367,10 @@ treatments = [
                 "duration": "3 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["infeccion sistemica no controlada", "infeccion fungica sistemica no controlada"],
+                                         "allergies": ["hipersensibilidad a corticosteroides"],
+                                         "comorbidities": ["diabetes mellitus descontrolada (vigilar glucemia)", "hipertension arterial severa"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6427,12 +6433,12 @@ treatments = [
                 "max_daily_dose": "Tópico",
                 "frequency": "Cada 12 horas",
                 "duration": "7-14 días",
-                "route": "Topical",
+                "route": "Tópico",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["infeccion cutanea bacteriana, viral o fungica sin tratar"],
+                                         "allergies": ["hipersensibilidad a corticosteroides topicos"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6452,12 +6458,12 @@ treatments = [
                 "max_daily_dose": "Tópico",
                 "frequency": "Cada 12 horas",
                 "duration": "Crónico intermitente",
-                "route": "Topical",
+                "route": "Tópico",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["embarazo y lactancia", "infeccion cutanea activa", "inmunodeficiencia"],
+                                         "allergies": ["hipersensibilidad a tacrolimus"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6479,17 +6485,17 @@ treatments = [
                 "duration": "Según prurito",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a cetirizina o hidroxizina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
                 "interactions_warning": None,
                 "monitoring": None,
                 "dosage": "10mg"
@@ -6502,12 +6508,12 @@ treatments = [
                 "max_daily_dose": "Tópico",
                 "frequency": "Cada 12 horas y tras baño",
                 "duration": "Crónico",
-                "route": "Topical",
+                "route": "Tópico",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a componentes de la crema"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6572,10 +6578,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["infarto de miocardio reciente", "arritmias", "glaucoma de angulo estrecho", "retencion urinaria", "uso de IMAO"],
+                                         "allergies": ["hipersensibilidad a antidepresivos triciclicos"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6583,7 +6589,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Riesgo de sindrome serotoninergico con IMAO y de prolongacion del QT con antiarritmicos.",
                 "monitoring": None,
                 "dosage": "25mg"
             },
@@ -6597,10 +6603,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["hemorragia activa", "trombocitopenia"],
+                                         "allergies": ["hipersensibilidad a pentosano polisulfato"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6622,18 +6628,18 @@ treatments = [
                 "duration": "Según síntomas",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["ulcera peptica activa o hemorragia gastrointestinal", "insuficiencia renal grave (filtrado <30 ml/min)", "tercer trimestre del embarazo", "asma sensible a AINE"],
+                                         "allergies": ["hipersensibilidad a ibuprofeno u otros AINE"],
+                                         "comorbidities": ["insuficiencia cardiaca significativa", "diatesis hemorragica"],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": "Menor dosis y menor duracion en adultos mayores",
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Aumento del riesgo de sangrado con anticoagulantes, antiagregantes y corticosteroides.",
                 "monitoring": None,
                 "dosage": "400mg"
             },
@@ -6690,18 +6696,18 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": [],
+                                         "allergies": ["hipersensibilidad a pregabalina"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": "Ajustar dosis en insuficiencia renal",
+                                   "hepatic": None,
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "Aumenta el efecto sedante con alcohol y otros depresores del sistema nervioso central.",
                 "monitoring": None,
                 "dosage": "75mg"
             },
@@ -6715,10 +6721,10 @@ treatments = [
                 "duration": "Crónico",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["glaucoma de angulo estrecho", "insuficiencia renal grave (filtrado <30 ml/min)", "hepatopatia grave", "uso de IMAO"],
+                                         "allergies": ["hipersensibilidad a duloxetina"],
+                                         "comorbidities": ["hipertension arterial no controlada"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6726,7 +6732,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Riesgo de sindrome serotoninergico con ISRS, IMAO y triptanes.",
                 "monitoring": None,
                 "dosage": "60mg"
             },
@@ -6740,18 +6746,18 @@ treatments = [
                 "duration": "Según dolor",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["insuficiencia hepatica grave"],
+                                         "allergies": ["hipersensibilidad al paracetamol"],
+                                         "comorbidities": [],
+                                     },
                 "adjustments": {
-          "renal": None,
-          "hepatic": None,
-          "pediatric": None,
-          "geriatric": None,
-          "pregnancy": None
-        },
-                "interactions_warning": None,
+                                   "renal": None,
+                                   "hepatic": "Evitar en enfermedad hepatica grave",
+                                   "pediatric": None,
+                                   "geriatric": None,
+                                   "pregnancy": None,
+                               },
+                "interactions_warning": "El alcohol y el uso prolongado aumentan el riesgo de dano hepatico.",
                 "monitoring": None,
                 "dosage": "500mg"
             },
@@ -6765,10 +6771,10 @@ treatments = [
                 "duration": "Máximo 7 días",
                 "route": "Oral",
                 "contraindications": {
-          "conditions": [],
-          "allergies": [],
-          "comorbidities": []
-        },
+                                         "conditions": ["epilepsia no controlada", "depresion respiratoria aguda", "uso de IMAO"],
+                                         "allergies": ["hipersensibilidad a opioides"],
+                                         "comorbidities": ["insuficiencia renal o hepatica grave"],
+                                     },
                 "adjustments": {
           "renal": None,
           "hepatic": None,
@@ -6776,7 +6782,7 @@ treatments = [
           "geriatric": None,
           "pregnancy": None
         },
-                "interactions_warning": None,
+                "interactions_warning": "Riesgo de sindrome serotoninergico con ISRS, IRSN y antidepresivos.",
                 "monitoring": None,
                 "dosage": "50mg"
             },
