@@ -29,6 +29,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         email=user.get("email", ""),
         name=user.get("name", ""),
         role=user.get("role", "paciente"),
+        hospital_id=user.get("hospital_id", ""),
         first_name=user.get("first_name", ""),
         last_name=user.get("last_name", ""),
         document_type=user.get("document_type", ""),

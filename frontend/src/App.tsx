@@ -15,7 +15,7 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '821096294804-
 function RoleRedirect() {
   const { user } = useAuth()
   if (user?.role === 'paciente') return <Navigate to="/paciente" replace />
-  if (user?.role === 'admin') return <Navigate to="/admin" replace />
+  if (user?.role === 'admin' || user?.role === 'super_admin') return <Navigate to="/admin" replace />
   return <ChatApp />
 }
 
@@ -46,7 +46,7 @@ export default function App() {
             <Route
               path="/admin"
               element={
-                <ProtectedRoute requiredRole="admin">
+                <ProtectedRoute requiredRole={['admin', 'super_admin']}>
                   <AdminPanel />
                 </ProtectedRoute>
               }

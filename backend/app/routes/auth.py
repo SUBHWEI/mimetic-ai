@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Query
 from datetime import datetime, timedelta
 import random
 from jose import jwt
 from passlib.context import CryptContext
+from bson import ObjectId
 from app.config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRATION_HOURS
 from app.database.mongodb import get_db
-from app.models.user import UserCreate, UserCreateByAdmin, UserLogin, UserOut, Token
+from app.models.user import VALID_ROLES, UserCreate, UserCreateByAdmin, UserLogin, UserOut, Token
 from app.auth.dependencies import get_current_user
 from app.email.sender import send_verification_code
 
@@ -19,6 +20,7 @@ def user_to_out(user: dict) -> UserOut:
         email=user.get("email", ""),
         name=user.get("name", ""),
         role=user.get("role", "paciente"),
+        hospital_id=user.get("hospital_id", ""),
         first_name=user.get("first_name", ""),
         last_name=user.get("last_name", ""),
         document_type=user.get("document_type", ""),
@@ -32,14 +34,20 @@ def user_to_out(user: dict) -> UserOut:
     )
 
 
-def create_access_token(user_id: str) -> str:
+def create_access_token(user_id: str, hospital_id: str = "") -> str:
     expire = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
-    payload = {"sub": user_id, "exp": expire}
+    payload = {"sub": user_id, "hospital_id": hospital_id, "exp": expire}
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
+async def require_super_admin(current_user: UserOut = Depends(get_current_user)):
+    if current_user.role != "super_admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super admin access required")
+    return current_user
+
+
 async def require_admin(current_user: UserOut = Depends(get_current_user)):
-    if current_user.role != "admin":
+    if current_user.role not in ("super_admin", "admin"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return current_user
 
@@ -155,8 +163,9 @@ async def verify_email(data: dict):
     await db.users.update_one({"email": email}, {"$set": {"verified": True}})
     await db.verification_codes.delete_one({"email": email})
 
+    user = await db.users.find_one({"email": email})
     user_id = str(user["_id"])
-    access_token = create_access_token(user_id)
+    access_token = create_access_token(user_id, user.get("hospital_id", ""))
 
     return Token(access_token=access_token, user=user_to_out(user))
 
@@ -165,19 +174,39 @@ async def verify_email(data: dict):
 async def create_user(data: UserCreateByAdmin, admin: UserOut = Depends(require_admin)):
     db = get_db()
 
-    if data.role not in ("admin", "medico", "paciente"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role. Use: admin, medico, paciente")
+    if data.role not in VALID_ROLES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role. Use: super_admin, admin, medico, paciente")
 
-    existing = await db.users.find_one({"email": data.email})
+    if admin.role == "super_admin":
+        if data.role != "super_admin" and not data.hospital_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="hospital_id is required")
+        if data.role == "super_admin":
+            data.hospital_id = ""
+        else:
+            hospital = await db.hospitals.find_one({"_id": ObjectId(data.hospital_id)})
+            if not hospital or not hospital.get("active", True):
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Hospital not found or inactive")
+    elif admin.role == "admin":
+        if data.role not in ("medico", "paciente"):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin can only create medico and paciente")
+        if data.hospital_id and data.hospital_id != admin.hospital_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No puedes crear usuarios en otro hospital")
+        data.hospital_id = admin.hospital_id
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    email = data.email.strip().lower()
+    existing = await db.users.find_one({"email": email})
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
     password_hash = pwd_context.hash(data.password)
     user_doc = {
-        "email": data.email,
+        "email": email,
         "name": data.name,
         "password_hash": password_hash,
         "role": data.role,
+        "hospital_id": data.hospital_id,
         "verified": True,
         "created_at": datetime.utcnow(),
     }
@@ -185,6 +214,33 @@ async def create_user(data: UserCreateByAdmin, admin: UserOut = Depends(require_
     user = await db.users.find_one({"_id": result.inserted_id})
 
     return user_to_out(user)
+
+
+@router.get("/users", response_model=list[UserOut])
+async def list_users(
+    role: str = Query("", description="Filter by role"),
+    hospital_id: str = Query("", description="Filter by hospital"),
+    current_user: UserOut = Depends(get_current_user),
+):
+    db = get_db()
+
+    if current_user.role not in ("super_admin", "admin"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    query: dict = {}
+    if current_user.role == "admin":
+        query["hospital_id"] = current_user.hospital_id
+    elif hospital_id:
+        query["hospital_id"] = hospital_id
+
+    if role:
+        if role not in VALID_ROLES:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role filter")
+        query["role"] = role
+
+    cursor = db.users.find(query).sort("created_at", -1)
+    users = await cursor.to_list(length=1000)
+    return [user_to_out(u) for u in users]
 
 
 @router.post("/login", response_model=Token)
@@ -199,7 +255,7 @@ async def login(data: UserLogin):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified")
 
     user_id = str(user["_id"])
-    access_token = create_access_token(user_id)
+    access_token = create_access_token(user_id, user.get("hospital_id", ""))
 
     return Token(access_token=access_token, user=user_to_out(user))
 
@@ -256,7 +312,7 @@ async def social_login(data: dict):
 
     user = await db.users.find_one({"email": email})
     if user:
-        access_token = create_access_token(str(user["_id"]))
+        access_token = create_access_token(str(user["_id"]), user.get("hospital_id", ""))
         return Token(access_token=access_token, user=user_to_out(user))
 
     return {"provider": provider, "token": token, "email": email, "name": name, "new_user": True}

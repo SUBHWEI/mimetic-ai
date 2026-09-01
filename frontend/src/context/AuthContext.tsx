@@ -6,6 +6,7 @@ type User = {
   email: string
   name: string
   role: string
+  hospital_id: string
   created_at: string
 }
 
