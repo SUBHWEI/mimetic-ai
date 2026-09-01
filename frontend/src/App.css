@@ -1106,6 +1106,16 @@
   appearance: auto;
 }
 
+.auth-field input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.auth-field input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
 .auth-field input:focus,
 .auth-field select:focus {
   border-color: #6366f1;
