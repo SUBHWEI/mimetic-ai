@@ -261,40 +261,20 @@ async def login(data: UserLogin):
 
 
 async def verify_social_token(provider: str, token: str, email: str = "", name: str = "") -> dict:
-    if provider == "google":
-        import httpx
+    if provider != "google":
+        raise HTTPException(status_code=400, detail="Invalid provider. Use: google")
 
-        async with httpx.AsyncClient() as client:
-            me_res = await client.get(
-                "https://www.googleapis.com/oauth2/v3/userinfo",
-                params={"access_token": token},
-            )
-            if me_res.status_code != 200:
-                raise HTTPException(status_code=401, detail="Invalid Google token")
-            me_data = me_res.json()
-            return {"email": me_data.get("email", email), "name": me_data.get("name", name)}
+    import httpx
 
-    elif provider == "facebook":
-        import httpx
-        from app.config import FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
-
-        async with httpx.AsyncClient() as client:
-            debug_res = await client.get(
-                "https://graph.facebook.com/debug_token",
-                params={"input_token": token, "access_token": f"{FACEBOOK_APP_ID}|{FACEBOOK_APP_SECRET}"},
-            )
-            debug_data = debug_res.json()
-            if not debug_data.get("data", {}).get("is_valid"):
-                raise HTTPException(status_code=401, detail="Invalid Facebook token")
-
-            me_res = await client.get(
-                "https://graph.facebook.com/me",
-                params={"fields": "id,name,email", "access_token": token},
-            )
-            me_data = me_res.json()
-            return {"email": me_data.get("email", email), "name": me_data.get("name", name)}
-
-    raise HTTPException(status_code=400, detail="Invalid provider. Use: google or facebook")
+    async with httpx.AsyncClient() as client:
+        me_res = await client.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            params={"access_token": token},
+        )
+        if me_res.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid Google token")
+        me_data = me_res.json()
+        return {"email": me_data.get("email", email), "name": me_data.get("name", name)}
 
 
 @router.post("/social-login")
