@@ -1,8 +1,24 @@
+import asyncio
+import logging
+
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import MONGODB_URL, MONGODB_DB_NAME
 
+logger = logging.getLogger("mimetic.mongodb")
+
 client = None
 db = None
+
+DB_MAX_RETRIES = 3
+DB_RETRY_DELAY = 2.0
+DB_PING_TIMEOUT_S = 3.0
+DB_HEALTH_SELECTION_TIMEOUT_MS = 5000
+
+
+def _strip_insecure_params(url: str) -> str:
+    """Elimina parametros de la URL que desactivan la verificacion de certificados TLS."""
+    url = url.replace("tlsInsecure=true", "").replace("tlsAllowInvalidCertificates=true", "")
+    return url.replace("&&", "&").replace("?&", "?").rstrip("&?")
 
 
 def _build_index_specs():
@@ -32,46 +48,87 @@ async def create_indexes():
     try:
         for coll_name, keys, options in _build_index_specs():
             await db[coll_name].create_index(keys, **options)
-        print("Indexes created/verified")
+        logger.info("Indexes created/verified")
     except Exception as e:
-        print("Warning: no se pudieron crear todos los índices:", type(e).__name__, e)
+        logger.warning("No se pudieron crear todos los índices: %s: %s", type(e).__name__, e)
 
 
-async def connect_db():
+async def connect_db(*, max_retries: int = DB_MAX_RETRIES, server_selection_timeout_ms: int = 30000) -> bool:
+    """Conecta a MongoDB con reintentos. Devuelve True si la conexión quedó activa."""
     global client, db
-    try:
-        # Uso TLS real: quitar parametros inseguros que desactivan la verificacion de certificados
-        url = MONGODB_URL
-        url = url.replace("tlsInsecure=true", "").replace("tlsAllowInvalidCertificates=true", "")
-        url = url.replace("&&", "&").replace("?&", "?").rstrip("&?")
-
-        client = AsyncIOMotorClient(
-            url,
-            tls=True,
-            tlsAllowInvalidCertificates=False,
-            tlsAllowInvalidHostnames=False,
-            serverSelectionTimeoutMS=30000,
-            connectTimeoutMS=30000,
-        )
-        db = client[MONGODB_DB_NAME]
-        await db.command("ping")
-        print("Connected to MongoDB")
-        await create_indexes()
-    except Exception as e:
-        print("=" * 60)
-        print("MongoDB connection failed:", type(e).__name__)
-        print("Error:", e)
-        print("URL schema:", url.split("://")[0] if "://" in url else "unknown")
-        print("=" * 60)
-        client = None
-        db = None
+    _temp_client = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            _temp_client = AsyncIOMotorClient(
+                _strip_insecure_params(MONGODB_URL),
+                tls=True,
+                tlsAllowInvalidCertificates=False,
+                tlsAllowInvalidHostnames=False,
+                serverSelectionTimeoutMS=server_selection_timeout_ms,
+                connectTimeoutMS=server_selection_timeout_ms,
+            )
+            _temp_db = _temp_client[MONGODB_DB_NAME]
+            await _temp_db.command("ping")
+            if client is not None:
+                try:
+                    client.close()
+                except Exception:
+                    pass
+            client = _temp_client
+            db = _temp_db
+            logger.info("Connected to MongoDB (attempt %d/%d)", attempt, max_retries)
+            await create_indexes()
+            return True
+        except Exception as e:
+            if _temp_client is not None:
+                try:
+                    _temp_client.close()
+                except Exception:
+                    pass
+                _temp_client = None
+            logger.warning(
+                "MongoDB connection attempt %d/%d failed: %s: %s",
+                attempt,
+                max_retries,
+                type(e).__name__,
+                e,
+            )
+            if attempt < max_retries:
+                await asyncio.sleep(DB_RETRY_DELAY)
+    client = None
+    db = None
+    return False
 
 
 async def close_db():
     global client
-    if client:
-        client.close()
-        print("Disconnected from MongoDB")
+    if client is not None:
+        try:
+            client.close()
+        except Exception:
+            pass
+        logger.info("Disconnected from MongoDB")
+
+
+async def db_is_ready() -> bool:
+    """Ping real al servidor MongoDB. Útil para health checks."""
+    if db is None:
+        return False
+    try:
+        await asyncio.wait_for(db.command("ping"), timeout=DB_PING_TIMEOUT_S)
+        return True
+    except Exception:
+        return False
+
+
+async def ensure_connected() -> bool:
+    """Verifica la conexión real y reconecta si es necesario (reconnect lazy)."""
+    if await db_is_ready():
+        return True
+    return await connect_db(
+        max_retries=1,
+        server_selection_timeout_ms=DB_HEALTH_SELECTION_TIMEOUT_MS,
+    )
 
 
 def get_db():

@@ -2,26 +2,31 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database.mongodb import connect_db, close_db, get_db
+from app.database.mongodb import connect_db, close_db, get_db, ensure_connected
 from app.config import CORS_ORIGINS
 from app.rate_limit import limiter
 from app.routes import diagnosis, knowledge, converse, patient, report, auth, clinical_history, hospitals
 
+logger = logging.getLogger("mimetic.main")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+
+knowledge_synced = False
 
 
 async def auto_seed():
+    global knowledge_synced
     db = get_db()
     if db is None:
         return
     from seed_data import symptoms, diseases, treatments
     from seed_data import _upsert_many
 
-    print("Synchronizing knowledge base (idempotent upsert)...")
+    logger.info("Synchronizing knowledge base (idempotent upsert)...")
     n_s = await _upsert_many(db.symptoms, symptoms, "name")
     n_d = await _upsert_many(db.diseases, diseases, "name")
     n_t = await _upsert_many(db.treatments, treatments, "disease_name")
-    print(f"Knowledge base synced: {n_s} symptoms, {n_d} diseases, {n_t} treatments")
+    knowledge_synced = True
+    logger.info("Knowledge base synced: %d symptoms, %d diseases, %d treatments", n_s, n_d, n_t)
 
 
 @asynccontextmanager
@@ -68,6 +73,7 @@ app.include_router(hospitals.router, prefix="/api", tags=["Hospitals"])
 
 @app.get("/health")
 async def health():
-    from app.database.mongodb import get_db
-    db_ok = get_db() is not None
+    db_ok = await ensure_connected()
+    if db_ok and not knowledge_synced:
+        await auto_seed()
     return {"status": "ok" if db_ok else "degraded", "service": "MIMETIC", "database": "connected" if db_ok else "disconnected"}
