@@ -18,6 +18,7 @@ DB_HEALTH_SELECTION_TIMEOUT_MS = 5000
 def _strip_insecure_params(url: str) -> str:
     """Elimina parametros de la URL que desactivan la verificacion de certificados TLS."""
     url = url.replace("tlsInsecure=true", "").replace("tlsAllowInvalidCertificates=true", "")
+    url = url.replace("tlsAllowInvalidHostnames=true", "")
     return url.replace("&&", "&").replace("?&", "?").rstrip("&?")
 
 
