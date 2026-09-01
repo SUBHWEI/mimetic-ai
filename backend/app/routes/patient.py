@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from app.auth.permissions import require_roles
 
 router = APIRouter()
 
@@ -79,7 +80,10 @@ class PatientInfoResponse(BaseModel):
 
 
 @router.post("/patient", response_model=PatientInfoResponse)
-async def patient_info(request: PatientInfoRequest):
+async def patient_info(
+    request: PatientInfoRequest,
+    current_user=Depends(require_roles("medico", "admin", "super_admin")),
+):
     info = dict(request.patient_info)
     msg = request.message.strip()
 
@@ -119,7 +123,7 @@ async def patient_info(request: PatientInfoRequest):
             next_field = field
             break
 
-    reply = next_field["question"] if next_field else "Todos los datos están registrados."
+    reply = next_field["label"] if next_field else "Todos los datos están registrados."
 
     return PatientInfoResponse(
         reply=reply,

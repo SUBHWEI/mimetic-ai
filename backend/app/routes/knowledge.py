@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.database.mongodb import get_db
+from app.auth.permissions import require_roles
 from bson import ObjectId
 
 router = APIRouter()
@@ -34,14 +35,17 @@ class TreatmentCreate(BaseModel):
 
 
 @router.post("/symptoms")
-async def create_symptom(data: SymptomCreate):
+async def create_symptom(
+    data: SymptomCreate,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     result = await db.symptoms.insert_one(data.model_dump())
     return {"id": str(result.inserted_id), "name": data.name}
 
 
 @router.get("/symptoms")
-async def list_symptoms():
+async def list_symptoms(current_user=Depends(require_roles("medico", "admin", "super_admin"))):
     db = get_db()
     symptoms = await db.symptoms.find().to_list(length=None)
     return [
@@ -51,14 +55,17 @@ async def list_symptoms():
 
 
 @router.post("/diseases")
-async def create_disease(data: DiseaseCreate):
+async def create_disease(
+    data: DiseaseCreate,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     result = await db.diseases.insert_one(data.model_dump())
     return {"id": str(result.inserted_id), "name": data.name}
 
 
 @router.get("/diseases")
-async def list_diseases():
+async def list_diseases(current_user=Depends(require_roles("medico", "admin", "super_admin"))):
     db = get_db()
     diseases = await db.diseases.find().to_list(length=None)
     return [
@@ -74,14 +81,17 @@ async def list_diseases():
 
 
 @router.post("/treatments")
-async def create_treatment(data: TreatmentCreate):
+async def create_treatment(
+    data: TreatmentCreate,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     result = await db.treatments.insert_one(data.model_dump())
     return {"id": str(result.inserted_id), "disease_name": data.disease_name}
 
 
 @router.get("/treatments")
-async def list_treatments():
+async def list_treatments(current_user=Depends(require_roles("medico", "admin", "super_admin"))):
     db = get_db()
     treatments = await db.treatments.find().to_list(length=None)
     return [

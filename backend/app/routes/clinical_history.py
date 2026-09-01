@@ -4,6 +4,7 @@ from bson import ObjectId
 from typing import Optional
 from app.database.mongodb import get_db
 from app.auth.dependencies import get_current_user
+from app.auth.permissions import require_roles
 from app.models.user import UserOut
 from app.models.clinical_history import (
     ClinicalHistoryCreate,
@@ -73,7 +74,7 @@ def session_to_out(s: dict) -> SessionOut:
 @router.get("/clinical-history/search")
 async def search_patients(
     q: str = Query("", min_length=0, max_length=50),
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if not q or db is None:
@@ -185,7 +186,7 @@ async def search_patients(
 @router.get("/clinical-history/{document}")
 async def get_clinical_history(
     document: str,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if db is None:
@@ -203,7 +204,7 @@ async def get_clinical_history(
 @router.post("/clinical-history", status_code=status.HTTP_201_CREATED)
 async def create_clinical_history(
     data: ClinicalHistoryCreate,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if db is None:
@@ -249,7 +250,7 @@ async def create_clinical_history(
 @router.get("/clinical-history/{document}/sessions")
 async def list_sessions(
     document: str,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if db is None:
@@ -269,7 +270,7 @@ async def list_sessions(
 async def create_session(
     document: str,
     data: SessionCreate,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if db is None:
@@ -322,7 +323,7 @@ async def update_session(
     document: str,
     session_id: str,
     data: SessionUpdate,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if db is None:

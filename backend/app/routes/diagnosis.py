@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.database.mongodb import get_db
+from app.auth.permissions import require_roles
 from app.expert_system.engine import diagnose, get_treatment
 from app.expert_system.normalizer import normalize_symptoms, load_learned
 
@@ -50,7 +51,10 @@ async def _load_learned_from_db():
 
 
 @router.post("/diagnose", response_model=DiagnoseResponse)
-async def diagnose_symptoms(request: DiagnoseRequest):
+async def diagnose_symptoms(
+    request: DiagnoseRequest,
+    current_user=Depends(require_roles("medico", "admin", "super_admin")),
+):
     if not request.symptoms:
         return DiagnoseResponse(
             normalized_symptoms=[], unmatched_symptoms=[],
@@ -72,7 +76,10 @@ async def diagnose_symptoms(request: DiagnoseRequest):
 
 
 @router.post("/treatment", response_model=TreatmentResponse | None)
-async def recommend_treatment(request: TreatmentRequest):
+async def recommend_treatment(
+    request: TreatmentRequest,
+    current_user=Depends(require_roles("medico", "admin", "super_admin")),
+):
     treatment = await get_treatment(request.disease_name)
     if not treatment:
         return None
@@ -84,7 +91,10 @@ async def recommend_treatment(request: TreatmentRequest):
 
 
 @router.post("/learn", response_model=LearnResponse)
-async def learn_symptom(request: LearnRequest):
+async def learn_symptom(
+    request: LearnRequest,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     """Teach the system a new phrase → symptom mapping."""
     from app.expert_system.normalizer import normalize
 
@@ -120,7 +130,7 @@ async def learn_symptom(request: LearnRequest):
 
 
 @router.get("/learned")
-async def get_learned():
+async def get_learned(current_user=Depends(require_roles("admin", "super_admin"))):
     """List all custom learned mappings."""
     db = get_db()
     if db is None:

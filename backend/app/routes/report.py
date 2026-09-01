@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from bson import ObjectId
 from app.expert_system.engine import diagnose, get_treatment, recommend_treatment
 from app.database.mongodb import get_db
+from app.auth.permissions import require_roles
 from datetime import datetime
 
 router = APIRouter()
@@ -39,7 +40,10 @@ def field_row(label, value):
 
 
 @router.post("/report", response_model=ReportResponse)
-async def generate_report(request: ReportRequest):
+async def generate_report(
+    request: ReportRequest,
+    current_user=Depends(require_roles("medico", "admin", "super_admin")),
+):
     pi = request.patient_info
     now = datetime.now()
     date_str = now.strftime("%d / %m / %Y")

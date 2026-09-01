@@ -53,7 +53,7 @@ async def require_admin(current_user: UserOut = Depends(get_current_user)):
 
 
 @router.post("/test-email")
-async def test_email(data: dict):
+async def test_email(data: dict, current_user: UserOut = Depends(require_admin)):
     email = data.get("email", "")
     if not email:
         raise HTTPException(status_code=400, detail="Email required")
@@ -220,12 +220,9 @@ async def create_user(data: UserCreateByAdmin, admin: UserOut = Depends(require_
 async def list_users(
     role: str = Query("", description="Filter by role"),
     hospital_id: str = Query("", description="Filter by hospital"),
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_admin),
 ):
     db = get_db()
-
-    if current_user.role not in ("super_admin", "admin"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     query: dict = {}
     if current_user.role == "admin":
