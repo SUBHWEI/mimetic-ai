@@ -8,34 +8,18 @@ from app.routes import diagnosis, knowledge, converse, patient, report, auth, cl
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
-EXPECTED_DISEASES = 51
-
 async def auto_seed():
     db = get_db()
     if db is None:
         return
-    existing = await db.diseases.count_documents({})
-    if existing == EXPECTED_DISEASES:
-        print(f"Database already seeded ({existing} diseases)")
-        return
-    print(f"Database has {existing} diseases; re-seeding to {EXPECTED_DISEASES}...")
     from seed_data import symptoms, diseases, treatments
-    for coll_name in ("symptoms", "diseases", "treatments"):
-        coll = db[coll_name]
-        existing_count = await coll.count_documents({})
-        if existing_count > 0:
-            await coll.drop()
-            print(f"  Dropped {coll_name} ({existing_count} old docs)")
-    if symptoms:
-        await db.symptoms.insert_many(symptoms)
-        print(f"  Inserted {len(symptoms)} symptoms")
-    if diseases:
-        await db.diseases.insert_many(diseases)
-        print(f"  Inserted {len(diseases)} diseases")
-    if treatments:
-        await db.treatments.insert_many(treatments)
-        print(f"  Inserted {len(treatments)} treatments")
-    print("Seeding complete")
+    from seed_data import _upsert_many
+
+    print("Synchronizing knowledge base (idempotent upsert)...")
+    n_s = await _upsert_many(db.symptoms, symptoms, "name")
+    n_d = await _upsert_many(db.diseases, diseases, "name")
+    n_t = await _upsert_many(db.treatments, treatments, "disease_name")
+    print(f"Knowledge base synced: {n_s} symptoms, {n_d} diseases, {n_t} treatments")
 
 
 @asynccontextmanager
