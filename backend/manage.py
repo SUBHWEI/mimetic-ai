@@ -29,13 +29,9 @@ import os
 MONGO_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 DB_NAME = os.getenv("MONGODB_DB_NAME", "mimetic_ai")
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 VALID_ROLES = ("super_admin", "admin", "medico", "paciente")
 
-if "tlsInsecure=true" not in MONGO_URL and "tlsAllowInvalidCertificates=true" not in MONGO_URL:
-    sep = "&" if "?" in MONGO_URL else "?"
-    MONGO_URL += sep + "tlsInsecure=true"
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def get_collection(client, name):

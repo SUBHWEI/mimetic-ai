@@ -23,10 +23,6 @@ load_dotenv()
 MONGO_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 DB_NAME = os.getenv("MONGODB_DB_NAME", "mimetic_ai")
 
-if "tlsInsecure=true" not in MONGO_URL and "tlsAllowInvalidCertificates=true" not in MONGO_URL:
-    sep = "&" if "?" in MONGO_URL else "?"
-    MONGO_URL += sep + "tlsInsecure=true"
-
 
 async def migrate():
     client = AsyncIOMotorClient(MONGO_URL, serverSelectionTimeoutMS=30000)

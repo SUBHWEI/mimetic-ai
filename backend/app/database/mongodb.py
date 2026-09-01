@@ -8,19 +8,16 @@ db = None
 async def connect_db():
     global client, db
     try:
-        # Append tlsInsecure to URL if not present
+        # Uso TLS real: quitar parametros inseguros que desactivan la verificacion de certificados
         url = MONGODB_URL
-        if "tlsInsecure=true" not in url and "tlsAllowInvalidCertificates=true" not in url:
-            sep = "&" if "?" in url else "?"
-            url += sep + "tlsInsecure=true"
-
-        import ssl
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        url = url.replace("tlsInsecure=true", "").replace("tlsAllowInvalidCertificates=true", "")
+        url = url.replace("&&", "&").replace("?&", "?").rstrip("&?")
 
         client = AsyncIOMotorClient(
             url,
+            tls=True,
+            tlsAllowInvalidCertificates=False,
+            tlsAllowInvalidHostnames=False,
             serverSelectionTimeoutMS=30000,
             connectTimeoutMS=30000,
         )
