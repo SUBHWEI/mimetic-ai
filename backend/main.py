@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database.mongodb import connect_db, close_db, get_db
 from app.config import CORS_ORIGINS
+from app.rate_limit import limiter
 from app.routes import diagnosis, knowledge, converse, patient, report, auth, clinical_history, hospitals
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -32,6 +33,20 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="MIMETIC - Medical Expert System", lifespan=lifespan)
+
+from slowapi.errors import RateLimitExceeded
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Demasiadas solicitudes. Intenta de nuevo más tarde."},
+    )
+
+app.state.limiter = limiter
 
 app.add_middleware(
     CORSMiddleware,

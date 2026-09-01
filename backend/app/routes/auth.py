@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
 from datetime import datetime, timedelta
 import random
 from jose import jwt
@@ -8,6 +8,7 @@ from app.config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRATION_HOURS
 from app.database.mongodb import get_db
 from app.models.user import VALID_ROLES, UserCreate, UserCreateByAdmin, UserLogin, UserOut, Token
 from app.auth.dependencies import get_current_user
+from app.rate_limit import limiter
 from app.email.sender import send_verification_code
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -64,7 +65,8 @@ async def test_email(data: dict, current_user: UserOut = Depends(require_admin))
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(data: UserCreate):
+@limiter.limit("5/minute")
+async def register(request: Request, data: UserCreate):
     db = get_db()
 
     existing = await db.users.find_one({"email": data.email})
@@ -138,7 +140,8 @@ async def register(data: UserCreate):
 
 
 @router.post("/verify-email", response_model=Token)
-async def verify_email(data: dict):
+@limiter.limit("10/minute")
+async def verify_email(request: Request, data: dict):
     db = get_db()
     email = data.get("email")
     code = data.get("code")
@@ -241,7 +244,8 @@ async def list_users(
 
 
 @router.post("/login", response_model=Token)
-async def login(data: UserLogin):
+@limiter.limit("10/minute")
+async def login(request: Request, data: UserLogin):
     db = get_db()
 
     user = await db.users.find_one({"email": data.email})
@@ -275,7 +279,8 @@ async def verify_social_token(provider: str, token: str, email: str = "", name: 
 
 
 @router.post("/social-login")
-async def social_login(data: dict):
+@limiter.limit("10/minute")
+async def social_login(request: Request, data: dict):
     db = get_db()
     provider = data.get("provider")
     token = data.get("token")
@@ -296,7 +301,8 @@ async def social_login(data: dict):
 
 
 @router.post("/social-register")
-async def social_register(data: dict):
+@limiter.limit("5/minute")
+async def social_register(request: Request, data: dict):
     db = get_db()
     provider = data.get("provider")
     token = data.get("token")

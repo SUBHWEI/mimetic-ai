@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from app.database.mongodb import get_db
 from app.auth.permissions import require_roles
+from app.rate_limit import limiter
 from app.expert_system.engine import diagnose, get_treatment
 from app.expert_system.normalizer import normalize_symptoms, load_learned
 
@@ -51,18 +52,20 @@ async def _load_learned_from_db():
 
 
 @router.post("/diagnose", response_model=DiagnoseResponse)
+@limiter.limit("30/minute")
 async def diagnose_symptoms(
-    request: DiagnoseRequest,
+    request: Request,
+    data: DiagnoseRequest,
     current_user=Depends(require_roles("medico", "admin", "super_admin")),
 ):
-    if not request.symptoms:
+    if not data.symptoms:
         return DiagnoseResponse(
             normalized_symptoms=[], unmatched_symptoms=[],
             suggestions={}, possible_diagnoses=[], total_candidates=0,
         )
 
     await _load_learned_from_db()
-    result = normalize_symptoms(request.symptoms)
+    result = normalize_symptoms(data.symptoms)
     normalized = result["matched"]
 
     diagnoses_result = await diagnose(normalized)
