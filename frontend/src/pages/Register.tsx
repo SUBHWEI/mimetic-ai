@@ -1,7 +1,7 @@
 import { useState, type FormEvent, useMemo, useEffect } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { API } from '../config'
+import { apiFetch } from '../api/client'
 import { getAllCountries, getDepartments, getCities, type LocationOption } from '../data/locations'
 
 export default function Register() {
@@ -88,16 +88,16 @@ export default function Register() {
         city: cityName,
         name: `${form.first_name} ${form.last_name}`,
       }
-      const res = await fetch(API + '/api/auth/register', {
+      const res = await apiFetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        auth: false,
         body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Registration failed')
       setStep('verify')
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al registrar')
     }
     setSubmitting(false)
   }
@@ -107,17 +107,17 @@ export default function Register() {
     setError('')
     setVerifying(true)
     try {
-      const res = await fetch(API + '/api/auth/verify-email', {
+      const res = await apiFetch('/api/auth/verify-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        auth: false,
         body: JSON.stringify({ email: form.email, code }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Verification failed')
       localStorage.setItem('token', data.access_token)
       window.location.href = '/'
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al verificar')
     }
     setVerifying(false)
   }

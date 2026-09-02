@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from app.database.mongodb import get_db
+from app.auth.permissions import require_roles
+from app.rate_limit import limiter
 from app.expert_system.engine import diagnose, get_treatment
 from app.expert_system.normalizer import normalize_symptoms, load_learned
 
@@ -50,15 +52,20 @@ async def _load_learned_from_db():
 
 
 @router.post("/diagnose", response_model=DiagnoseResponse)
-async def diagnose_symptoms(request: DiagnoseRequest):
-    if not request.symptoms:
+@limiter.limit("30/minute")
+async def diagnose_symptoms(
+    request: Request,
+    data: DiagnoseRequest,
+    current_user=Depends(require_roles("medico", "admin", "super_admin")),
+):
+    if not data.symptoms:
         return DiagnoseResponse(
             normalized_symptoms=[], unmatched_symptoms=[],
             suggestions={}, possible_diagnoses=[], total_candidates=0,
         )
 
     await _load_learned_from_db()
-    result = normalize_symptoms(request.symptoms)
+    result = normalize_symptoms(data.symptoms)
     normalized = result["matched"]
 
     diagnoses_result = await diagnose(normalized)
@@ -72,7 +79,10 @@ async def diagnose_symptoms(request: DiagnoseRequest):
 
 
 @router.post("/treatment", response_model=TreatmentResponse | None)
-async def recommend_treatment(request: TreatmentRequest):
+async def recommend_treatment(
+    request: TreatmentRequest,
+    current_user=Depends(require_roles("medico", "admin", "super_admin")),
+):
     treatment = await get_treatment(request.disease_name)
     if not treatment:
         return None
@@ -84,18 +94,21 @@ async def recommend_treatment(request: TreatmentRequest):
 
 
 @router.post("/learn", response_model=LearnResponse)
-async def learn_symptom(request: LearnRequest):
+async def learn_symptom(
+    request: LearnRequest,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     """Teach the system a new phrase → symptom mapping."""
     from app.expert_system.normalizer import normalize
 
     phrase_norm = normalize(request.phrase)
     if not phrase_norm:
-        raise HTTPException(status_code=400, detail="Phrase cannot be empty")
+        raise HTTPException(status_code=400, detail="La frase no puede estar vacía")
 
     canonical = normalize(request.canonical_symptom)
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     existing = await db.learned_synonyms.find_one({"phrase": phrase_norm})
     if existing:
@@ -120,7 +133,7 @@ async def learn_symptom(request: LearnRequest):
 
 
 @router.get("/learned")
-async def get_learned():
+async def get_learned(current_user=Depends(require_roles("admin", "super_admin"))):
     """List all custom learned mappings."""
     db = get_db()
     if db is None:

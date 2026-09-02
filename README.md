@@ -48,7 +48,6 @@ Variables de entorno (ver `start_backend.ps1`):
 - `MONGODB_URL` — conexión a MongoDB Atlas
 - `SMTP_USER` / `SMTP_PASSWORD` — credenciales Gmail SMTP
 - `GOOGLE_CLIENT_ID` — OAuth de Google Login
-- `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` — OAuth de Facebook Login
 - `GMAIL_API_CLIENT_ID` / `GMAIL_API_CLIENT_SECRET` / `GMAIL_API_REFRESH_TOKEN` — Gmail API (HTTPS)
 
 ## Diagnóstico conversacional
@@ -79,8 +78,8 @@ El flujo principal es:
 |--------|------|-------------|
 | POST | `/api/auth/register` | Registro de paciente |
 | POST | `/api/auth/login` | Inicio de sesión |
-| POST | `/api/auth/social-login` | Inicio de sesión con Google/Facebook |
-| POST | `/api/auth/social-register` | Registro con Google/Facebook |
+| POST | `/api/auth/social-login` | Inicio de sesión con Google |
+| POST | `/api/auth/social-register` | Registro con Google |
 | POST | `/api/auth/verify-email` | Verificar código de correo |
 | POST | `/api/auth/create-user` | Crear usuario (admin) |
 | GET | `/api/auth/me` | Perfil del usuario autenticado |

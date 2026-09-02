@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from bson import ObjectId
+import html as html_lib
 from app.expert_system.engine import diagnose, get_treatment, recommend_treatment
 from app.database.mongodb import get_db
+from app.auth.permissions import require_roles
 from datetime import datetime
 
 router = APIRouter()
@@ -24,27 +26,44 @@ class ReportResponse(BaseModel):
     treatment: dict | None = None
 
 
-# Helper: checkmark for boolean-style fields
+# Helper: escape user-provided value before inserting into HTML (prevents XSS)
+def esc(value):
+    if value is None:
+        return ""
+    return html_lib.escape(str(value), quote=True)
+
+
+# Helper: checkmark for boolean-style fields (escaped for HTML)
 def val(pi, key, default=""):
+    v = pi.get(key, "")
+    return esc(v) if v else esc(default)
+
+
+# Helper: raw value without HTML escaping (for plain-text output)
+def raw_val(pi, key, default=""):
     v = pi.get(key, "")
     return v if v else default
 
 
 def section(title, content):
-    return f"<h2>{title}</h2>\n{content}" if content.strip() else ""
+    return f"<h2>{esc(title)}</h2>\n{content}" if content.strip() else ""
 
 
 def field_row(label, value):
-    return f"<tr><td class='label'>{label}</td><td class='value'>{value}</td></tr>" if value else ""
+    return f"<tr><td class='label'>{esc(label)}</td><td class='value'>{value}</td></tr>" if value else ""
 
 
 @router.post("/report", response_model=ReportResponse)
-async def generate_report(request: ReportRequest):
+async def generate_report(
+    request: ReportRequest,
+    current_user=Depends(require_roles("medico", "admin", "super_admin")),
+):
     pi = request.patient_info
     now = datetime.now()
     date_str = now.strftime("%d / %m / %Y")
     time_str = now.strftime("%I:%M %p")
-    hour_start = pi.get("consultation_start", time_str)
+    hour_start_raw = pi.get("consultation_start", time_str)
+    hour_start = esc(hour_start_raw)
     hour_end = time_str
 
     results = await diagnose(request.symptoms) if request.symptoms else []
@@ -83,7 +102,7 @@ async def generate_report(request: ReportRequest):
     </table>"""
 
     # ── 3. Anamnesis (Motivo de Consulta y Síntomas) ──
-    symptoms_list = "".join(f"<li>{s}</li>" for s in request.symptoms) if request.symptoms else "<li class='none'>No reportados</li>"
+    symptoms_list = "".join(f"<li>{esc(s)}</li>" for s in request.symptoms) if request.symptoms else "<li class='none'>No reportados</li>"
     anamnesis = f"""
     <table class='info-table'>
         {field_row("Motivo de Consulta", val(pi, "consultation_reason"))}
@@ -133,8 +152,8 @@ async def generate_report(request: ReportRequest):
     # ── 6. Diagnósticos Diferenciales ──
     if results:
         diag_rows = "".join(
-            f"<tr><td>{d['disease_name']}</td><td>{d.get('severity', '')}</td>"
-            f"<td>{d['confidence']:.0%}</td><td>{d.get('description', '')[:80]}</td></tr>"
+            f"<tr><td>{esc(d['disease_name'])}</td><td>{esc(d.get('severity', ''))}</td>"
+            f"<td>{d['confidence']:.0%}</td><td>{esc(d.get('description', ''))[:80]}</td></tr>"
             for d in results
         )
         diagnosticos = f"""
@@ -153,7 +172,7 @@ async def generate_report(request: ReportRequest):
         is_new = "available" in tx
         diag_confirmado = tx.get("disease_name", "")
         receta += f"""
-        <p><strong>Diagnóstico confirmado:</strong> {diag_confirmado}</p>"""
+        <p><strong>Diagnóstico confirmado:</strong> {esc(diag_confirmado)}</p>"""
 
         def _med_row(m):
             name = m.get("name", "")
@@ -163,15 +182,15 @@ async def generate_report(request: ReportRequest):
             via = m.get("route", "Oral")
             monitoring = m.get("monitoring", "")
             summary = m.get("patient_summary", "")
-            summary_html = f"<div class='summary-note'>{summary}</div>" if summary else ""
+            summary_html = f"<div class='summary-note'>{esc(summary)}</div>" if summary else ""
             return f"""
                 <tr>
-                    <td>{name}{summary_html}</td>
-                    <td>{dosage}</td>
-                    <td><span class='tag'>{via}</span></td>
-                    <td>{freq}</td>
-                    <td>{duration}</td>
-                    <td>{monitoring}</td>
+                    <td>{esc(name)}{summary_html}</td>
+                    <td>{esc(dosage)}</td>
+                    <td><span class='tag'>{esc(via)}</span></td>
+                    <td>{esc(freq)}</td>
+                    <td>{esc(duration)}</td>
+                    <td>{esc(monitoring)}</td>
                 </tr>"""
 
         def _med_notes(m):
@@ -180,9 +199,9 @@ async def generate_report(request: ReportRequest):
             if contra:
                 items = []
                 if contra.get("allergies"):
-                    items.append("Alergias: " + ", ".join(contra["allergies"]))
+                    items.append("Alergias: " + ", ".join(esc(a) for a in contra["allergies"]))
                 if contra.get("conditions"):
-                    items.append("Contraindicado en: " + ", ".join(contra["conditions"]))
+                    items.append("Contraindicado en: " + ", ".join(esc(c) for c in contra["conditions"]))
                 if items:
                     notes += f"""<tr><td colspan="6" class="contra-block">{" | ".join(items)}</td></tr>"""
             adj = m.get("adjustments", {})
@@ -191,12 +210,12 @@ async def generate_report(request: ReportRequest):
                 for key in ("renal", "hepatic", "pediatric", "geriatric", "pregnancy"):
                     v = adj.get(key)
                     if v:
-                        adj_items.append(f"<strong>{key.capitalize()}:</strong> {v}")
+                        adj_items.append(f"<strong>{esc(key.capitalize())}:</strong> {esc(v)}")
                 if adj_items:
                     notes += f"""<tr><td colspan="6" class="contra-block">{" | ".join(adj_items)}</td></tr>"""
             int_warn = m.get("interactions_warning")
             if int_warn:
-                notes += f"""<tr><td colspan="6" class="warning-block">ADVERTENCIA: {int_warn}</td></tr>"""
+                notes += f"""<tr><td colspan="6" class="warning-block">ADVERTENCIA: {esc(int_warn)}</td></tr>"""
             return notes
 
         if is_new:
@@ -236,7 +255,7 @@ async def generate_report(request: ReportRequest):
             receta += "</table>"
 
         if non_pharm:
-            bullets = "".join(f"<li>{t}</li>" for t in non_pharm if isinstance(t, str))
+            bullets = "".join(f"<li>{esc(t)}</li>" for t in non_pharm if isinstance(t, str))
             receta += f"""
         <h3>Tratamientos No Farmacológicos</h3>
         <ul>{bullets}</ul>"""
@@ -246,7 +265,7 @@ async def generate_report(request: ReportRequest):
     if tx and tx.get("general_recommendations"):
         recs = tx["general_recommendations"]
         # Split by period or newline into bullet points
-        bullets = "".join(f"<li>{r.strip()}</li>" for r in recs.split(".") if r.strip())
+        bullets = "".join(f"<li>{esc(r.strip())}</li>" for r in recs.split(".") if r.strip())
         recomendaciones = f"<ul>{bullets}</ul>"
 
     # ── Build Full HTML ──
@@ -361,37 +380,43 @@ async def generate_report(request: ReportRequest):
 </body>
 </html>"""
 
-    # Plain text
+    # Plain text (uses raw, unescaped values)
+    text_doc_type = raw_val(pi, "document_type", "CC")
+    text_doc_num = raw_val(pi, "id_document")
+    text_doc_full = f"{text_doc_type} N° {text_doc_num}" if text_doc_num else ""
+    text_gender = raw_val(pi, "gender")
+    text_gender_display = gender_map.get(text_gender.lower(), text_gender) if text_gender else ""
+
     text = f"""=== HISTORIA CLÍNICA ===
 MIMETIC - Sistema de Apoyo al Diagnóstico Médico
 Fecha: {date_str} - {time_str}
 
 --- 1. Información General ---
-Fecha: {date_str} | Inicio: {hour_start} | Cierre: {hour_end}
+Fecha: {date_str} | Inicio: {hour_start_raw} | Cierre: {hour_end}
 
 --- 2. Identificación del Paciente ---
-Nombre: {val(pi, "name")}
-Documento: {doc_full}
-Edad: {val(pi, "age")} | Género: {gender_display}
-Ocupación: {val(pi, "occupation")} | Teléfono: {val(pi, "phone")}
-Ciudad: {val(pi, "location")}
+Nombre: {raw_val(pi, "name")}
+Documento: {text_doc_full}
+Edad: {raw_val(pi, "age")} | Género: {text_gender_display}
+Ocupación: {raw_val(pi, "occupation")} | Teléfono: {raw_val(pi, "phone")}
+Ciudad: {raw_val(pi, "location")}
 
 --- 3. Anamnesis ---
-Motivo: {val(pi, "consultation_reason")}
-Evolución: {val(pi, "symptom_evolution")}
+Motivo: {raw_val(pi, "consultation_reason")}
+Evolución: {raw_val(pi, "symptom_evolution")}
 Síntomas: {', '.join(request.symptoms) if request.symptoms else 'No reportados'}
 
 --- 4. Antecedentes ---
-Tabaco: {val(pi, "tobacco")} | Alcohol: {val(pi, "alcohol")}
-Sustancias: {val(pi, "substances")} | Actividad: {val(pi, "physical_activity")}
-Médicos: {val(pi, "medical_history")}
-Quirúrgicos: {val(pi, "surgical_history")}
-Farmacológicos: {val(pi, "pharmacological_history")}
-Alergias: {val(pi, "allergies")}
+Tabaco: {raw_val(pi, "tobacco")} | Alcohol: {raw_val(pi, "alcohol")}
+Sustancias: {raw_val(pi, "substances")} | Actividad: {raw_val(pi, "physical_activity")}
+Médicos: {raw_val(pi, "medical_history")}
+Quirúrgicos: {raw_val(pi, "surgical_history")}
+Farmacológicos: {raw_val(pi, "pharmacological_history")}
+Alergias: {raw_val(pi, "allergies")}
 
 --- 5. Signos Vitales ---
-PA: {val(pi, "blood_pressure")} | FC: {val(pi, "heart_rate")} | FR: {val(pi, "respiratory_rate")}
-Temp: {val(pi, "temperature")} | Peso: {val(pi, "weight")} | Estatura: {val(pi, "height")}
+PA: {raw_val(pi, "blood_pressure")} | FC: {raw_val(pi, "heart_rate")} | FR: {raw_val(pi, "respiratory_rate")}
+Temp: {raw_val(pi, "temperature")} | Peso: {raw_val(pi, "weight")} | Estatura: {raw_val(pi, "height")}
 
 --- 6. Diagnósticos ---
 """

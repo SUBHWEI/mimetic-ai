@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import { API } from '../config'
+import { AUTH_EVENT, apiFetch, errorMessage } from '../api/client'
 
 type User = {
   id: string
   email: string
   name: string
   role: string
+  hospital_id: string
   created_at: string
 }
 
@@ -25,37 +26,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
   const [loading, setLoading] = useState(true)
 
+  const clearSession = () => {
+    localStorage.removeItem('token')
+    setToken(null)
+    setUser(null)
+  }
+
   useEffect(() => {
     if (!token) {
       setLoading(false)
       return
     }
-    fetch(API + '/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => {
+    const run = async () => {
+      try {
+        const res = await apiFetch('/api/auth/me')
         if (!res.ok) throw new Error('Invalid token')
-        return res.json()
-      })
-      .then(data => setUser(data))
-      .catch(() => {
-        localStorage.removeItem('token')
-        setToken(null)
-        setUser(null)
-      })
-      .finally(() => setLoading(false))
+        setUser(await res.json())
+      } catch {
+        clearSession()
+      } finally {
+        setLoading(false)
+      }
+    }
+    run()
   }, [token])
 
+  useEffect(() => {
+    window.addEventListener(AUTH_EVENT, clearSession)
+    return () => window.removeEventListener(AUTH_EVENT, clearSession)
+  }, [])
+
   const login = async (email: string, password: string) => {
-    const res = await fetch(API + '/api/auth/login', {
+    const res = await apiFetch('/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      auth: false,
       body: JSON.stringify({ email, password }),
     })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.detail || 'Login failed')
-    }
+    if (!res.ok) throw new Error(await errorMessage(res, 'Login failed'))
     const data = await res.json()
     localStorage.setItem('token', data.access_token)
     setToken(data.access_token)
@@ -63,15 +70,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const register = async (email: string, name: string, password: string) => {
-    const res = await fetch(API + '/api/auth/register', {
+    const res = await apiFetch('/api/auth/register', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      auth: false,
       body: JSON.stringify({ email, name, password }),
     })
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.detail || 'Registration failed')
-    }
+    if (!res.ok) throw new Error(await errorMessage(res, 'Registration failed'))
     const data = await res.json()
     localStorage.setItem('token', data.access_token)
     setToken(data.access_token)
@@ -79,9 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    localStorage.removeItem('token')
-    setToken(null)
-    setUser(null)
+    clearSession()
   }
 
   return (

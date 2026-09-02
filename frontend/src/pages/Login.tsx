@@ -18,8 +18,8 @@ export default function Login() {
     setSubmitting(true)
     try {
       await login(email, password)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
     }
     setSubmitting(false)
   }
