@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../api/client'
+import { extractError } from '../api/errors'
 import { FULL_GROUPS, SESSION_GROUPS, INITIAL_MESSAGES } from './constants'
 import type { Message, PatientInfo, PatientInfoMode, Phase, SearchResult } from './types'
 
@@ -80,7 +81,7 @@ export function useChatApp() {
         setShowSearchResults(true)
       }
     } catch {
-      // silent
+      setSearchResults([])
     }
     setSearching(false)
   }, [])
@@ -226,8 +227,8 @@ export function useChatApp() {
           body: JSON.stringify(histBody),
         })
         if (!histRes.ok) {
-          const errData = await histRes.json().catch(() => ({}))
-          throw new Error(errData.detail || 'Error al crear historia clínica')
+          const err = await extractError(histRes, 'Error al crear la historia clínica')
+          throw new Error(err)
         }
       }
 
@@ -256,8 +257,8 @@ export function useChatApp() {
         body: JSON.stringify(sessBody),
       })
       if (!sessRes.ok) {
-        const errData = await sessRes.json().catch(() => ({}))
-        throw new Error(errData.detail || 'Error al crear sesión')
+        const err = await extractError(sessRes, 'Error al crear la sesión')
+        throw new Error(err)
       }
 
       const sessData = await sessRes.json()
@@ -273,7 +274,7 @@ export function useChatApp() {
       setPhase('symptoms')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: `Error: ${msg}` }])
+      setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: msg }])
     }
     setIsSending(false)
   }
@@ -302,7 +303,7 @@ export function useChatApp() {
         }),
       })
       if (!res.ok) {
-        throw new Error(`Error del servidor (${res.status})`)
+        throw new Error(await extractError(res, 'No se pudo procesar tu mensaje.'))
       }
       const data = await res.json()
 
@@ -325,7 +326,7 @@ export function useChatApp() {
     } catch (err) {
       const isAbort = err instanceof Error && err.name === 'AbortError'
       if (!isAbort) {
-        const msg = err instanceof Error ? err.message : 'Error de conexión con el servidor.'
+        const msg = err instanceof Error ? err.message : 'No se pudo conectar con el servidor. Verifica tu conexión.'
         setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: msg }])
       }
     }
@@ -355,11 +356,15 @@ export function useChatApp() {
           document_number: patientInfo.id_document || selectedDocument,
         }),
       })
+      if (!res.ok) {
+        throw new Error(await extractError(res, 'No se pudo generar el reporte.'))
+      }
       const data = await res.json()
       setReportHtml(data.html_report)
       setPhase('report')
-    } catch {
-      setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: 'Error generando el reporte.' }])
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al generar el reporte.'
+      setMessages(m => [...m, { id: crypto.randomUUID(), role: 'assistant', text: msg }])
     }
     setIsGeneratingReport(false)
   }

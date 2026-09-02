@@ -51,6 +51,15 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
         content={"detail": "Demasiadas solicitudes. Intenta de nuevo más tarde."},
     )
 
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Ocurrió un error inesperado. Intenta de nuevo más tarde."},
+    )
+
 app.state.limiter = limiter
 
 app.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])

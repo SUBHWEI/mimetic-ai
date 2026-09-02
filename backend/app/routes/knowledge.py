@@ -100,7 +100,7 @@ async def create_symptom(
     db = get_db()
     existing = await db.symptoms.find_one({"name": data.name})
     if existing:
-        raise HTTPException(status_code=409, detail="Symptom already exists")
+        raise HTTPException(status_code=409, detail="El síntoma ya existe")
     result = await db.symptoms.insert_one(data.model_dump())
     return {"id": str(result.inserted_id), "name": data.name}
 
@@ -121,14 +121,14 @@ async def update_symptom(
     db = get_db()
     update = _non_empty(data.model_dump())
     if not update:
-        raise HTTPException(status_code=400, detail="Nothing to update")
+        raise HTTPException(status_code=400, detail="Nada que actualizar")
     if "name" in update:
         dup = await db.symptoms.find_one({"name": update["name"], "_id": {"$ne": ObjectId(symptom_id)}})
         if dup:
-            raise HTTPException(status_code=409, detail="Another symptom already uses that name")
+            raise HTTPException(status_code=409, detail="Otro síntoma ya usa ese nombre")
     res = await db.symptoms.update_one({"_id": ObjectId(symptom_id)}, {"$set": update})
     if res.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Symptom not found")
+        raise HTTPException(status_code=404, detail="Síntoma no encontrado")
     doc = await db.symptoms.find_one({"_id": ObjectId(symptom_id)})
     return _symptom_out(doc)
 
@@ -141,7 +141,7 @@ async def delete_symptom(
     db = get_db()
     res = await db.symptoms.delete_one({"_id": ObjectId(symptom_id)})
     if res.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Symptom not found")
+        raise HTTPException(status_code=404, detail="Síntoma no encontrado")
     return {"deleted": True, "id": symptom_id}
 
 
@@ -155,7 +155,7 @@ async def create_disease(
     db = get_db()
     existing = await db.diseases.find_one({"name": data.name})
     if existing:
-        raise HTTPException(status_code=409, detail="Disease already exists")
+        raise HTTPException(status_code=409, detail="La enfermedad ya existe")
     result = await db.diseases.insert_one(data.model_dump())
     return {"id": str(result.inserted_id), "name": data.name}
 
@@ -176,14 +176,14 @@ async def update_disease(
     db = get_db()
     update = _non_empty(data.model_dump())
     if not update:
-        raise HTTPException(status_code=400, detail="Nothing to update")
+        raise HTTPException(status_code=400, detail="Nada que actualizar")
     if update.get("name"):
         dup = await db.diseases.find_one({"name": update["name"], "_id": {"$ne": ObjectId(disease_id)}})
         if dup:
-            raise HTTPException(status_code=409, detail="Another disease already uses that name")
+            raise HTTPException(status_code=409, detail="Otra enfermedad ya usa ese nombre")
     res = await db.diseases.update_one({"_id": ObjectId(disease_id)}, {"$set": update})
     if res.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Disease not found")
+        raise HTTPException(status_code=404, detail="Enfermedad no encontrada")
     doc = await db.diseases.find_one({"_id": ObjectId(disease_id)})
     return _disease_out(doc)
 
@@ -196,7 +196,7 @@ async def delete_disease(
     db = get_db()
     res = await db.diseases.delete_one({"_id": ObjectId(disease_id)})
     if res.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Disease not found")
+        raise HTTPException(status_code=404, detail="Enfermedad no encontrada")
     return {"deleted": True, "id": disease_id}
 
 
@@ -210,7 +210,7 @@ async def create_treatment(
     db = get_db()
     existing = await db.treatments.find_one({"disease_name": data.disease_name})
     if existing:
-        raise HTTPException(status_code=409, detail="Treatment already exists for this disease")
+        raise HTTPException(status_code=409, detail="Ya existe un tratamiento para esta enfermedad")
     result = await db.treatments.insert_one(data.model_dump())
     return {"id": str(result.inserted_id), "disease_name": data.disease_name}
 
@@ -231,14 +231,14 @@ async def update_treatment(
     db = get_db()
     update = _non_empty(data.model_dump())
     if not update:
-        raise HTTPException(status_code=400, detail="Nothing to update")
+        raise HTTPException(status_code=400, detail="Nada que actualizar")
     if update.get("disease_name"):
         dup = await db.treatments.find_one({"disease_name": update["disease_name"], "_id": {"$ne": ObjectId(treatment_id)}})
         if dup:
-            raise HTTPException(status_code=409, detail="Another treatment already exists for that disease")
+            raise HTTPException(status_code=409, detail="Ya existe otro tratamiento para esa enfermedad")
     res = await db.treatments.update_one({"_id": ObjectId(treatment_id)}, {"$set": update})
     if res.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Treatment not found")
+        raise HTTPException(status_code=404, detail="Tratamiento no encontrado")
     doc = await db.treatments.find_one({"_id": ObjectId(treatment_id)})
     return _treatment_out(doc)
 
@@ -251,7 +251,7 @@ async def delete_treatment(
     db = get_db()
     res = await db.treatments.delete_one({"_id": ObjectId(treatment_id)})
     if res.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Treatment not found")
+        raise HTTPException(status_code=404, detail="Tratamiento no encontrado")
     return {"deleted": True, "id": treatment_id}
 
 
@@ -270,7 +270,7 @@ async def bulk_import(
 ):
     db = get_db()
     if data.collection not in ("symptoms", "diseases", "treatments"):
-        raise HTTPException(status_code=400, detail="collection must be symptoms, diseases or treatments")
+        raise HTTPException(status_code=400, detail="La colección debe ser symptoms, diseases o treatments")
     coll = db[data.collection]
     inserted = 0
     updated = 0

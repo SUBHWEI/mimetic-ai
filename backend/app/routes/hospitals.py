@@ -29,7 +29,7 @@ async def list_hospitals(
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     query = {} if include_inactive else {"active": True}
     cursor = db.hospitals.find(query).sort("name", 1)
@@ -44,12 +44,12 @@ async def create_hospital(
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     code = data.code.strip().upper()
     existing_code = await db.hospitals.find_one({"code": code})
     if existing_code:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Hospital code already exists")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El código del hospital ya existe")
 
     doc = {
         "name": data.name.strip(),
@@ -72,11 +72,11 @@ async def get_hospital(
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     hospital = await db.hospitals.find_one({"_id": ObjectId(hospital_id)})
     if not hospital:
-        raise HTTPException(status_code=404, detail="Hospital not found")
+        raise HTTPException(status_code=404, detail="Hospital no encontrado")
 
     return hospital_to_out(hospital)
 
@@ -89,11 +89,11 @@ async def update_hospital(
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     existing = await db.hospitals.find_one({"_id": ObjectId(hospital_id)})
     if not existing:
-        raise HTTPException(status_code=404, detail="Hospital not found")
+        raise HTTPException(status_code=404, detail="Hospital no encontrado")
 
     update = {}
     if data.name is not None:
@@ -102,7 +102,7 @@ async def update_hospital(
         new_code = data.code.strip().upper()
         code_exists = await db.hospitals.find_one({"code": new_code, "_id": {"$ne": ObjectId(hospital_id)}})
         if code_exists:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Hospital code already exists")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El código del hospital ya existe")
         update["code"] = new_code
     if data.address is not None:
         update["address"] = data.address.strip()
@@ -127,11 +127,11 @@ async def delete_hospital(
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     existing = await db.hospitals.find_one({"_id": ObjectId(hospital_id)})
     if not existing:
-        raise HTTPException(status_code=404, detail="Hospital not found")
+        raise HTTPException(status_code=404, detail="Hospital no encontrado")
 
     users_in_hospital = await db.users.count_documents({"hospital_id": hospital_id})
     if users_in_hospital > 0:

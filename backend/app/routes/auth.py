@@ -44,13 +44,13 @@ def create_access_token(user_id: str, hospital_id: str = "") -> str:
 
 async def require_super_admin(current_user: UserOut = Depends(get_current_user)):
     if current_user.role != "super_admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Super admin access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Se requiere acceso de super administrador")
     return current_user
 
 
 async def require_admin(current_user: UserOut = Depends(get_current_user)):
     if current_user.role not in ("super_admin", "admin"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Se requiere acceso de administrador")
     return current_user
 
 
@@ -58,7 +58,7 @@ async def require_admin(current_user: UserOut = Depends(get_current_user)):
 async def test_email(data: dict, current_user: UserOut = Depends(require_admin)):
     email = data.get("email", "")
     if not email:
-        raise HTTPException(status_code=400, detail="Email required")
+        raise HTTPException(status_code=400, detail="El correo electrónico es obligatorio")
     from app.email.sender import send_verification_code
     code = str(random.randint(100000, 999999))
     send_verification_code(email, code, "Test User")
@@ -73,12 +73,12 @@ async def register(request: Request, data: UserCreate):
     existing = await db.users.find_one({"email": data.email})
     if existing:
         if existing.get("verified"):
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Este correo electrónico ya está registrado")
         else:
             if data.document_number:
                 doc_exists = await db.users.find_one({"document_number": data.document_number, "_id": {"$ne": existing["_id"]}})
                 if doc_exists:
-                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Document number already registered")
+                    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Este número de documento ya está registrado")
             await db.users.update_one(
                 {"_id": existing["_id"]},
                 {"$set": {
@@ -107,7 +107,7 @@ async def register(request: Request, data: UserCreate):
     if data.document_number:
         doc_exists = await db.users.find_one({"document_number": data.document_number})
         if doc_exists:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Document number already registered")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Este número de documento ya está registrado")
 
     password_hash = pwd_context.hash(data.password)
     user_doc = {
@@ -149,21 +149,21 @@ async def verify_email(request: Request, data: dict):
     code = data.get("code")
 
     if not email or not code:
-        raise HTTPException(status_code=400, detail="Email and code required")
+        raise HTTPException(status_code=400, detail="El correo electrónico y el código son obligatorios")
 
     stored = await db.verification_codes.find_one({"email": email})
     if not stored:
-        raise HTTPException(status_code=400, detail="No verification code found. Register again.")
+        raise HTTPException(status_code=400, detail="No se encontró código de verificación. Regístrate de nuevo.")
 
     if stored["code"] != code:
-        raise HTTPException(status_code=400, detail="Invalid verification code")
+        raise HTTPException(status_code=400, detail="Código de verificación inválido")
 
     if stored["expires_at"] < datetime.utcnow():
-        raise HTTPException(status_code=400, detail="Verification code expired. Register again.")
+        raise HTTPException(status_code=400, detail="El código de verificación expiró. Regístrate de nuevo.")
 
     user = await db.users.find_one({"email": email})
     if not user:
-        raise HTTPException(status_code=400, detail="User not found")
+        raise HTTPException(status_code=400, detail="Usuario no encontrado")
 
     await db.users.update_one({"email": email}, {"$set": {"verified": True}})
     await db.verification_codes.delete_one({"email": email})
@@ -180,30 +180,30 @@ async def create_user(data: UserCreateByAdmin, admin: UserOut = Depends(require_
     db = get_db()
 
     if data.role not in VALID_ROLES:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role. Use: super_admin, admin, medico, paciente")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rol inválido. Use: super_admin, admin, medico, paciente")
 
     if admin.role == "super_admin":
         if data.role != "super_admin" and not data.hospital_id:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="hospital_id is required")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El hospital es obligatorio")
         if data.role == "super_admin":
             data.hospital_id = ""
         else:
             hospital = await db.hospitals.find_one({"_id": ObjectId(data.hospital_id)})
             if not hospital or not hospital.get("active", True):
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Hospital not found or inactive")
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Hospital no encontrado o inactivo")
     elif admin.role == "admin":
         if data.role not in ("medico", "paciente"):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin can only create medico and paciente")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El administrador solo puede crear médicos y pacientes")
         if data.hospital_id and data.hospital_id != admin.hospital_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No puedes crear usuarios en otro hospital")
         data.hospital_id = admin.hospital_id
     else:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Se requiere acceso de administrador")
 
     email = data.email.strip().lower()
     existing = await db.users.find_one({"email": email})
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Este correo electrónico ya está registrado")
 
     password_hash = pwd_context.hash(data.password)
     user_doc = {
@@ -238,7 +238,7 @@ async def list_users(
 
     if role:
         if role not in VALID_ROLES:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role filter")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filtro de rol inválido")
         query["role"] = role
 
     cursor = db.users.find(query).sort("created_at", -1)
@@ -253,13 +253,13 @@ async def login(request: Request, data: UserLogin):
 
     user = await db.users.find_one({"email": data.email})
     if not user or not pwd_context.verify(data.password, user["password_hash"]):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Correo electrónico o contraseña incorrectos")
 
     if not user.get("active", True):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cuenta deshabilitada")
 
     if not user.get("verified", True):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not verified")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Correo electrónico no verificado")
 
     user_id = str(user["_id"])
     access_token = create_access_token(user_id, user.get("hospital_id", ""))
@@ -269,7 +269,7 @@ async def login(request: Request, data: UserLogin):
 
 async def verify_social_token(provider: str, token: str, email: str = "", name: str = "") -> dict:
     if provider != "google":
-        raise HTTPException(status_code=400, detail="Invalid provider. Use: google")
+        raise HTTPException(status_code=400, detail="Proveedor inválido. Use: Google")
 
     import httpx
 
@@ -279,7 +279,7 @@ async def verify_social_token(provider: str, token: str, email: str = "", name: 
             params={"access_token": token},
         )
         if me_res.status_code != 200:
-            raise HTTPException(status_code=401, detail="Invalid Google token")
+            raise HTTPException(status_code=401, detail="Token de Google inválido")
         me_data = me_res.json()
         return {"email": me_data.get("email", email), "name": me_data.get("name", name)}
 
@@ -292,7 +292,7 @@ async def social_login(request: Request, data: dict):
     token = data.get("token")
 
     if not provider or not token:
-        raise HTTPException(status_code=400, detail="Provider and token required")
+        raise HTTPException(status_code=400, detail="El proveedor y el token son obligatorios")
 
     profile = await verify_social_token(provider, token)
     email = profile["email"]
@@ -303,7 +303,7 @@ async def social_login(request: Request, data: dict):
         if not user.get("active", True):
             raise HTTPException(status_code=403, detail="Cuenta deshabilitada")
         if not user.get("verified", False):
-            raise HTTPException(status_code=403, detail="Email not verified")
+            raise HTTPException(status_code=403, detail="Correo electrónico no verificado")
         access_token = create_access_token(str(user["_id"]), user.get("hospital_id", ""))
         return Token(access_token=access_token, user=user_to_out(user))
 
@@ -320,18 +320,18 @@ async def social_register(request: Request, data: dict):
     name = data.get("name", "")
 
     if not provider or not token or not email or not name:
-        raise HTTPException(status_code=400, detail="Provider, token, email and name required")
+        raise HTTPException(status_code=400, detail="Proveedor, token, correo electrónico y nombre son obligatorios")
 
     await verify_social_token(provider, token)
     existing = await db.users.find_one({"email": email})
     if existing:
-        raise HTTPException(status_code=409, detail="Email already registered")
+        raise HTTPException(status_code=409, detail="Este correo electrónico ya está registrado")
 
     doc_num = data.get("document_number", "")
     if doc_num:
         doc_exists = await db.users.find_one({"document_number": doc_num})
         if doc_exists:
-            raise HTTPException(status_code=409, detail="Document number already registered")
+            raise HTTPException(status_code=409, detail="Este número de documento ya está registrado")
 
     user_doc = {
         "email": email,

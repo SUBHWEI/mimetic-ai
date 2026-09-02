@@ -103,12 +103,12 @@ async def learn_symptom(
 
     phrase_norm = normalize(request.phrase)
     if not phrase_norm:
-        raise HTTPException(status_code=400, detail="Phrase cannot be empty")
+        raise HTTPException(status_code=400, detail="La frase no puede estar vacía")
 
     canonical = normalize(request.canonical_symptom)
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     existing = await db.learned_synonyms.find_one({"phrase": phrase_norm})
     if existing:

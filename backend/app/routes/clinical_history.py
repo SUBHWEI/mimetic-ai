@@ -190,11 +190,11 @@ async def get_clinical_history(
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     hist = await db.clinical_histories.find_one({"document_number": document})
     if not hist:
-        raise HTTPException(status_code=404, detail="Clinical history not found")
+        raise HTTPException(status_code=404, detail="Historia clínica no encontrada")
 
     return history_to_out(hist)
 
@@ -208,10 +208,10 @@ async def create_clinical_history(
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     if not data.document_number:
-        raise HTTPException(status_code=400, detail="Document number is required")
+        raise HTTPException(status_code=400, detail="El número de documento es obligatorio")
 
     existing = await db.clinical_histories.find_one({"document_number": data.document_number})
     if existing:
@@ -254,7 +254,7 @@ async def list_sessions(
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     cursor = (
         db.sessions.find({"document_number": document})
@@ -274,7 +274,7 @@ async def create_session(
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     # Optionally update the clinical_history updated_at timestamp
     await db.clinical_histories.update_one(
@@ -327,11 +327,11 @@ async def update_session(
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     existing = await db.sessions.find_one({"_id": ObjectId(session_id), "document_number": document})
     if not existing:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sesión no encontrada")
 
     update = {}
     if data.symptoms:
