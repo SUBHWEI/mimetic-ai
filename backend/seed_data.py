@@ -6884,32 +6884,62 @@ treatments = [
 ]
 
 
+async def _upsert_many(collection, documents, key_field):
+    """Inserta o actualiza documentos por un campo clave (idempotente)."""
+    count = 0
+    for doc in documents:
+        key_value = doc.get(key_field)
+        if key_value is None:
+            continue
+        filter_clause = {key_field: key_value}
+        # El _id no se debe reasignar al hacer `$set` de todo el documento
+        patch = {k: v for k, v in doc.items() if k != "_id"}
+        await collection.update_one(filter_clause, {"$set": patch}, upsert=True)
+        count += 1
+    return count
+
+
 async def seed():
+    """Siembra los catálogos de forma idempotente (no borra lo existente)."""
     client = AsyncIOMotorClient(MONGO_URL)
     db = client[DB_NAME]
 
-    collections = await db.list_collection_names()
-    if "symptoms" in collections:
-        await db.symptoms.drop()
-        print("Dropped existing symptoms collection")
-    if "diseases" in collections:
-        await db.diseases.drop()
-        print("Dropped existing diseases collection")
-    if "treatments" in collections:
-        await db.treatments.drop()
-        print("Dropped existing treatments collection")
+    try:
+        n_symptoms = _upsert_many(db.symptoms, symptoms, "name")
+        print(f"Upserted {n_symptoms} symptoms")
 
-    await db.symptoms.insert_many(symptoms)
-    print(f"Inserted {len(symptoms)} symptoms")
+        n_diseases = _upsert_many(db.diseases, diseases, "name")
+        print(f"Upserted {n_diseases} diseases")
 
-    await db.diseases.insert_many(diseases)
-    print(f"Inserted {len(diseases)} diseases")
+        n_treatments = _upsert_many(db.treatments, treatments, "disease_name")
+        print(f"Upserted {n_treatments} treatments")
+    finally:
+        client.close()
 
-    await db.treatments.insert_many(treatments)
-    print(f"Inserted {len(treatments)} treatments")
-
-    client.close()
     print("Seed completed!")
+
+
+async def force_rebuild():
+    """Borra y vuelve a sembrar todo (solo para re-inicializar)."""
+    client = AsyncIOMotorClient(MONGO_URL)
+    db = client[DB_NAME]
+
+    try:
+        for coll_name in ("symptoms", "diseases", "treatments"):
+            if coll_name in await db.list_collection_names():
+                await db[coll_name].drop()
+                print(f"Dropped {coll_name}")
+
+        await db.symptoms.insert_many(symptoms)
+        print(f"Inserted {len(symptoms)} symptoms")
+        await db.diseases.insert_many(diseases)
+        print(f"Inserted {len(diseases)} diseases")
+        await db.treatments.insert_many(treatments)
+        print(f"Inserted {len(treatments)} treatments")
+    finally:
+        client.close()
+
+    print("Force rebuild completed!")
 
 
 if __name__ == "__main__":
