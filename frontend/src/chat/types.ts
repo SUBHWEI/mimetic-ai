@@ -16,6 +16,21 @@ export type Diagnosis = {
   total_input_symptoms: number
 }
 
+export type ManualDiagnosis = {
+  id: string
+  disease_name: string
+  notes?: string
+}
+
+export type DoctorReview = {
+  confirmedDiagnoses: string[]
+  rejectedDiagnoses: string[]
+  manualDiagnoses: ManualDiagnosis[]
+  selectedMedicines: string[]
+  modifiedDoses: Record<string, string>
+  doctorNotes: string
+}
+
 export type MedicineDetail = {
   name: string
   dosage?: string
@@ -110,3 +125,12 @@ export type SearchResult = {
 
 export type Phase = 'search' | 'patient_info' | 'symptoms' | 'report'
 export type PatientInfoMode = 'full' | 'session_only'
+
+export const INITIAL_DOCTOR_REVIEW: DoctorReview = {
+  confirmedDiagnoses: [],
+  rejectedDiagnoses: [],
+  manualDiagnoses: [],
+  selectedMedicines: [],
+  modifiedDoses: {},
+  doctorNotes: '',
+}

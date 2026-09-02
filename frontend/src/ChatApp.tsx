@@ -74,11 +74,19 @@ export default function ChatApp() {
       currentSymptoms={app.currentSymptoms}
       suggestedSymptoms={app.suggestedSymptoms}
       selectedDiagnosis={app.selectedDiagnosis}
+      doctorReview={app.doctorReview}
       endRef={app.endRef}
       onSend={app.handleSend}
       onSuggestion={app.handleSuggestion}
       onSelectDiagnosis={app.handleSelectDiagnosis}
       onGenerateReport={app.generateReport}
+      onToggleDiagnosisConfirmation={app.toggleDiagnosisConfirmation}
+      onToggleDiagnosisRejection={app.toggleDiagnosisRejection}
+      onAddManualDiagnosis={app.addManualDiagnosis}
+      onRemoveManualDiagnosis={app.removeManualDiagnosis}
+      onToggleMedicine={app.toggleMedicineSelection}
+      onUpdateDose={app.updateMedicineDose}
+      onSetDoctorNotes={app.setDoctorNotes}
       confidenceColor={app.confidenceColor}
       severityColor={app.severityColor}
     />

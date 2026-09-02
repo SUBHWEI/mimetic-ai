@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../api/client'
 import { extractError } from '../api/errors'
 import { FULL_GROUPS, SESSION_GROUPS, INITIAL_MESSAGES } from './constants'
-import type { Message, PatientInfo, PatientInfoMode, Phase, SearchResult } from './types'
+import type { DoctorReview, ManualDiagnosis, Message, PatientInfo, PatientInfoMode, Phase, SearchResult } from './types'
+import { INITIAL_DOCTOR_REVIEW } from './types'
 
 export function useChatApp() {
   const { user, logout } = useAuth()
@@ -21,6 +22,7 @@ export function useChatApp() {
   const [selectedDiagnosis, setSelectedDiagnosis] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [selectedDocument, setSelectedDocument] = useState<string>('')
+  const [doctorReview, setDoctorReview] = useState<DoctorReview>({ ...INITIAL_DOCTOR_REVIEW })
 
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
@@ -342,16 +344,81 @@ export function useChatApp() {
     handleSend(disease)
   }
 
+  const toggleDiagnosisConfirmation = (disease: string) => {
+    setDoctorReview(prev => {
+      const confirmed = prev.confirmedDiagnoses.includes(disease)
+        ? prev.confirmedDiagnoses.filter(d => d !== disease)
+        : [...prev.confirmedDiagnoses, disease]
+      const rejected = prev.rejectedDiagnoses.includes(disease)
+        ? prev.rejectedDiagnoses.filter(d => d !== disease)
+        : prev.rejectedDiagnoses
+      return { ...prev, confirmedDiagnoses: confirmed, rejectedDiagnoses: rejected }
+    })
+  }
+
+  const toggleDiagnosisRejection = (disease: string) => {
+    setDoctorReview(prev => {
+      const rejected = prev.rejectedDiagnoses.includes(disease)
+        ? prev.rejectedDiagnoses.filter(d => d !== disease)
+        : [...prev.rejectedDiagnoses, disease]
+      const confirmed = prev.confirmedDiagnoses.includes(disease)
+        ? prev.confirmedDiagnoses.filter(d => d !== disease)
+        : prev.confirmedDiagnoses
+      return { ...prev, confirmedDiagnoses: confirmed, rejectedDiagnoses: rejected }
+    })
+  }
+
+  const addManualDiagnosis = (diseaseName: string, notes: string = '') => {
+    setDoctorReview(prev => ({
+      ...prev,
+      manualDiagnoses: [
+        ...prev.manualDiagnoses,
+        { id: crypto.randomUUID(), disease_name: diseaseName, notes },
+      ],
+    }))
+  }
+
+  const removeManualDiagnosis = (id: string) => {
+    setDoctorReview(prev => ({
+      ...prev,
+      manualDiagnoses: prev.manualDiagnoses.filter(d => d.id !== id),
+    }))
+  }
+
+  const toggleMedicineSelection = (medicineName: string) => {
+    setDoctorReview(prev => {
+      const selected = prev.selectedMedicines.includes(medicineName)
+        ? prev.selectedMedicines.filter(m => m !== medicineName)
+        : [...prev.selectedMedicines, medicineName]
+      return { ...prev, selectedMedicines: selected }
+    })
+  }
+
+  const updateMedicineDose = (medicineName: string, newDose: string) => {
+    setDoctorReview(prev => ({
+      ...prev,
+      modifiedDoses: { ...prev.modifiedDoses, [medicineName]: newDose },
+    }))
+  }
+
+  const setDoctorNotes = (notes: string) => {
+    setDoctorReview(prev => ({ ...prev, doctorNotes: notes }))
+  }
+
+  const resetDoctorReview = () => {
+    setDoctorReview({ ...INITIAL_DOCTOR_REVIEW })
+  }
+
   const generateReport = async () => {
     setIsGeneratingReport(true)
     try {
       const res = await apiFetch('/api/report', {
         method: 'POST',
-        auth: false,
         body: JSON.stringify({
           patient_info: patientInfo,
           symptoms: currentSymptoms,
           selected_diagnosis: selectedDiagnosis,
+          doctor_review: doctorReview,
           session_id: sessionId,
           document_number: patientInfo.id_document || selectedDocument,
         }),
@@ -383,6 +450,7 @@ export function useChatApp() {
     setSearchResults([])
     setShowSearchResults(false)
     setMessages(INITIAL_MESSAGES)
+    setDoctorReview({ ...INITIAL_DOCTOR_REVIEW })
   }
 
   const backToSymptoms = () => {
@@ -436,6 +504,7 @@ export function useChatApp() {
     suggestedSymptoms: messages
       .flatMap(m => m.suggestions || [])
       .filter((s, i, arr) => arr.indexOf(s) === i),
+    doctorReview,
     handleSearchChange,
     selectPatient,
     startNewPatient,
@@ -444,6 +513,14 @@ export function useChatApp() {
     handleSend,
     handleSuggestion,
     handleSelectDiagnosis,
+    toggleDiagnosisConfirmation,
+    toggleDiagnosisRejection,
+    addManualDiagnosis,
+    removeManualDiagnosis,
+    toggleMedicineSelection,
+    updateMedicineDose,
+    setDoctorNotes,
+    resetDoctorReview,
     generateReport,
     resetAll,
     backToSymptoms,

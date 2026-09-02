@@ -15,6 +15,7 @@ class ReportRequest(BaseModel):
     patient_info: dict
     symptoms: list[str]
     selected_diagnosis: str | None = None
+    doctor_review: dict | None = None
     session_id: Optional[str] = None
     document_number: Optional[str] = None
 
@@ -59,6 +60,12 @@ async def generate_report(
     current_user=Depends(require_roles("medico", "admin", "super_admin")),
 ):
     pi = request.patient_info
+    dr = request.doctor_review or {}
+    confirmed_diags = dr.get("confirmedDiagnoses", [])
+    manual_diags = dr.get("manualDiagnoses", [])
+    selected_medicines = dr.get("selectedMedicines", [])
+    modified_doses = dr.get("modifiedDoses", {})
+    doctor_notes = dr.get("doctorNotes", "")
     now = datetime.now()
     date_str = now.strftime("%d / %m / %Y")
     time_str = now.strftime("%I:%M %p")
@@ -150,7 +157,36 @@ async def generate_report(
     </table>"""
 
     # ── 6. Diagnósticos Diferenciales ──
-    if results:
+    if confirmed_diags or manual_diags:
+        confirmed_rows = "".join(
+            f"<tr><td>{esc(name)}</td><td>Confirmado</td><td>—</td></tr>"
+            for name in confirmed_diags
+        )
+        manual_rows = "".join(
+            f"<tr><td>{esc(d.get('disease_name', ''))}</td><td>Manual del médico</td><td>{esc(d.get('notes', ''))}</td></tr>"
+            for d in manual_diags
+        )
+        diagnosticos = f"""
+        <h3>Diagnósticos Confirmados por el Médico</h3>
+        <table class='info-table'>
+            <tr class='header-row'><th>Enfermedad</th><th>Origen</th><th>Notas</th></tr>
+            {confirmed_rows}
+            {manual_rows}
+        </table>"""
+        if results:
+            diff_rows = "".join(
+                f"<tr><td>{esc(d['disease_name'])}</td><td>{esc(d.get('severity', ''))}</td>"
+                f"<td>{d['confidence']:.0%}</td><td>{esc(d.get('description', ''))[:80]}</td></tr>"
+                for d in results if d['disease_name'] not in confirmed_diags
+            )
+            if diff_rows:
+                diagnosticos += f"""
+        <h3>Diagnósticos Diferenciales Sugeridos por la IA</h3>
+        <table class='info-table'>
+            <tr class='header-row'><th>Enfermedad</th><th>Severidad</th><th>Confianza</th><th>Descripción</th></tr>
+            {diff_rows}
+        </table>"""
+    elif results:
         diag_rows = "".join(
             f"<tr><td>{esc(d['disease_name'])}</td><td>{esc(d.get('severity', ''))}</td>"
             f"<td>{d['confidence']:.0%}</td><td>{esc(d.get('description', ''))[:80]}</td></tr>"
@@ -176,17 +212,19 @@ async def generate_report(
 
         def _med_row(m):
             name = m.get("name", "")
-            dosage = m.get("dosage", "")
+            dose_key = f"{name}"
+            dosage = modified_doses.get(dose_key) or m.get("dosage", "")
             freq = m.get("frequency", "")
             duration = m.get("duration", "")
             via = m.get("route", "Oral")
             monitoring = m.get("monitoring", "")
             summary = m.get("patient_summary", "")
             summary_html = f"<div class='summary-note'>{esc(summary)}</div>" if summary else ""
+            modified_tag = f'<div style="color:#991b1b;font-size:7.5pt;font-style:italic;">Dosis ajustada por médico: {esc(dosage)}</div>' if dose_key in modified_doses else ""
             return f"""
                 <tr>
                     <td>{esc(name)}{summary_html}</td>
-                    <td>{esc(dosage)}</td>
+                    <td>{esc(dosage)}{modified_tag}</td>
                     <td><span class='tag'>{esc(via)}</span></td>
                     <td>{esc(freq)}</td>
                     <td>{esc(duration)}</td>
@@ -229,6 +267,13 @@ async def generate_report(
             alt_meds = tx.get("alternative_medicines", [])
             non_pharm = tx.get("non_pharmacological_treatments", [])
 
+        # If the doctor selected specific medicines, honor that selection
+        if selected_medicines:
+            def _keep(m):
+                return m.get("name") in selected_medicines
+            meds = [m for m in meds if _keep(m)]
+            alt_meds = [m for m in alt_meds if _keep(m)]
+
         if meds or not_rec:
             receta += """
         <h3>Medicamentos Prescritos</h3>
@@ -267,6 +312,11 @@ async def generate_report(
         # Split by period or newline into bullet points
         bullets = "".join(f"<li>{esc(r.strip())}</li>" for r in recs.split(".") if r.strip())
         recomendaciones = f"<ul>{bullets}</ul>"
+
+    # ── 9. Notas del Médico ──
+    notas_medico = ""
+    if doctor_notes:
+        notas_medico = f"<p>{esc(doctor_notes)}</p>"
 
     # ── Build Full HTML ──
     html_report = f"""<!DOCTYPE html>
@@ -372,6 +422,13 @@ async def generate_report(
 {recomendaciones if recomendaciones else "<p class='none'>No se registraron recomendaciones adicionales.</p>"}
 </section>
 
+{'''
+<section>
+<h2>9. Observaciones del Médico</h2>
+''' + (notas_medico if notas_medico else "<p class='none'>Sin observaciones registradas por el médico.</p>") + '''
+</section>
+''' if doctor_notes else ''}
+
 <div class="footer">
   <p>Este reporte es generado por MIMETIC como herramienta de apoyo al diagnóstico.</p>
   <p>No sustituye el criterio de un profesional de la salud. Ley 23 de 1981 — Colombia.</p>
@@ -438,6 +495,9 @@ Temp: {raw_val(pi, "temperature")} | Peso: {raw_val(pi, "weight")} | Estatura: {
         if tx.get("general_recommendations"):
             text += f"\n--- 8. Recomendaciones ---\n{tx['general_recommendations']}\n"
 
+    if doctor_notes:
+        text += f"\n--- 9. Observaciones del Médico ---\n{doctor_notes}\n"
+
     text += "\n=== Fin del Reporte ==="
 
     # Persist session data if session_id and document_number provided
@@ -445,6 +505,8 @@ Temp: {raw_val(pi, "temperature")} | Peso: {raw_val(pi, "weight")} | Estatura: {
         db = get_db()
         if db is not None:
             update = {"symptoms": request.symptoms}
+            if dr:
+                update["doctor_review"] = dr
             if results:
                 update["diagnoses"] = results
             if tx:
