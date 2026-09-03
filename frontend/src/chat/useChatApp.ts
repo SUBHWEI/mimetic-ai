@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../api/client'
 import { extractError } from '../api/errors'
 import { FULL_GROUPS, SESSION_GROUPS, INITIAL_MESSAGES } from './constants'
-import type { DoctorReview, ManualDiagnosis, Message, PatientInfo, PatientInfoMode, Phase, SearchResult } from './types'
+import type { DoctorReview, Message, PatientInfo, PatientInfoMode, Phase, SearchResult } from './types'
 import { INITIAL_DOCTOR_REVIEW } from './types'
 
 export function useChatApp() {
