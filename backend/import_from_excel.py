@@ -33,6 +33,8 @@ import sys
 
 from dotenv import load_dotenv
 
+from app.utils import normalize_text
+
 load_dotenv()
 
 VALID_COLLECTIONS = ("symptoms", "diseases", "treatments")
@@ -63,9 +65,19 @@ async def _upsert(coll, docs, key_field):
 
 
 def _split_symptoms(raw) -> list[str]:
+    """Divide síntomas y los normaliza/deduplica (p. ej. "Fiebre, fiebre" -> ["fiebre"])."""
     if isinstance(raw, list):
-        return [s.strip() for s in raw if str(s).strip()]
-    return [s.strip() for s in str(raw).split("|") if s.strip()]
+        parts = [str(s) for s in raw if str(s).strip()]
+    else:
+        parts = [p for p in str(raw).split("|") if p.strip()]
+    seen = set()
+    normalized = []
+    for p in parts:
+        n = normalize_text(p)
+        if n and n not in seen:
+            seen.add(n)
+            normalized.append(n)
+    return normalized
 
 
 def _rows_from_excel(path):
@@ -83,12 +95,25 @@ def _rows_from_csv(path):
 
 
 async def _validate_symptoms_catalog(db, symptoms: list[str]):
-    """Registra síntomas faltantes en el catálogo de forma idempotente."""
+    """Registra síntomas faltantes en el catálogo de forma idempotente.
+
+    Guarda siempre el nombre normalizado (sin acentos) y tolera la existencia
+    previa de duplicados con acento ("Vómito" vs "vomito") mediante el manejo
+    de DuplicateKeyError bajo el índice único de ``name``.
+    """
+    from pymongo.errors import DuplicateKeyError
+
     added = 0
     for s in symptoms:
-        doc = {"name": s, "description": "", "category": "generales"}
-        res = await db.symptoms.update_one({"name": s}, {"$set": doc}, upsert=True)
-        if res.upserted_id is not None:
+        name = normalize_text(s)
+        if not name:
+            continue
+        doc = {"name": name, "description": "", "category": "generales"}
+        try:
+            res = await db.symptoms.update_one({"name": name}, {"$set": doc}, upsert=True)
+        except DuplicateKeyError:
+            res = None
+        if res is not None and res.upserted_id is not None:
             added += 1
     return added
 
@@ -101,7 +126,7 @@ async def import_diseases_tabular(rows, to_db=True):
         t_inserted = t_updated = 0
         sym_added = 0
         for row in rows:
-            name = (row.get("enfermedad") or "").strip()
+            name = normalize_text(row.get("enfermedad") or "")
             if not name:
                 continue
             symptoms = _split_symptoms(row.get("sintomas", ""))
