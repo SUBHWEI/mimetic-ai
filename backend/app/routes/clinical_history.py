@@ -44,6 +44,8 @@ def session_to_out(s: dict) -> SessionOut:
         document_number=s.get("document_number", ""),
         doctor_id=s.get("doctor_id", ""),
         doctor_name=s.get("doctor_name", ""),
+        hospital_id=s.get("hospital_id", ""),
+        hospital_name=s.get("hospital_name", ""),
         date=s.get("date", datetime.utcnow()),
         consultation_reason=s.get("consultation_reason", ""),
         symptom_evolution=s.get("symptom_evolution", ""),
@@ -287,6 +289,8 @@ async def create_session(
         "document_number": document,
         "doctor_id": current_user.id,
         "doctor_name": current_user.name,
+        "hospital_id": current_user.hospital_id,
+        "hospital_name": "",
         "date": now,
         "consultation_reason": data.consultation_reason,
         "symptom_evolution": data.symptom_evolution,
@@ -310,6 +314,12 @@ async def create_session(
         "treatment": None,
         "report_html": "",
     }
+
+    # Resolve hospital name from hospital_id
+    if current_user.hospital_id:
+        hospital = await db.hospitals.find_one({"_id": ObjectId(current_user.hospital_id)})
+        if hospital:
+            session_doc["hospital_name"] = hospital.get("name", "")
 
     result = await db.sessions.insert_one(session_doc)
     created = await db.sessions.find_one({"_id": result.inserted_id})
