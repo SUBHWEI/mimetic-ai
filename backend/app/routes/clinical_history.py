@@ -4,6 +4,7 @@ from bson import ObjectId
 from typing import Optional
 from app.database.mongodb import get_db
 from app.auth.dependencies import get_current_user
+from app.auth.permissions import require_roles
 from app.models.user import UserOut
 from app.models.clinical_history import (
     ClinicalHistoryCreate,
@@ -73,7 +74,7 @@ def session_to_out(s: dict) -> SessionOut:
 @router.get("/clinical-history/search")
 async def search_patients(
     q: str = Query("", min_length=0, max_length=50),
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if not q or db is None:
@@ -185,15 +186,15 @@ async def search_patients(
 @router.get("/clinical-history/{document}")
 async def get_clinical_history(
     document: str,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     hist = await db.clinical_histories.find_one({"document_number": document})
     if not hist:
-        raise HTTPException(status_code=404, detail="Clinical history not found")
+        raise HTTPException(status_code=404, detail="Historia clínica no encontrada")
 
     return history_to_out(hist)
 
@@ -203,14 +204,14 @@ async def get_clinical_history(
 @router.post("/clinical-history", status_code=status.HTTP_201_CREATED)
 async def create_clinical_history(
     data: ClinicalHistoryCreate,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     if not data.document_number:
-        raise HTTPException(status_code=400, detail="Document number is required")
+        raise HTTPException(status_code=400, detail="El número de documento es obligatorio")
 
     existing = await db.clinical_histories.find_one({"document_number": data.document_number})
     if existing:
@@ -249,11 +250,11 @@ async def create_clinical_history(
 @router.get("/clinical-history/{document}/sessions")
 async def list_sessions(
     document: str,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     cursor = (
         db.sessions.find({"document_number": document})
@@ -269,11 +270,11 @@ async def list_sessions(
 async def create_session(
     document: str,
     data: SessionCreate,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     # Optionally update the clinical_history updated_at timestamp
     await db.clinical_histories.update_one(
@@ -322,15 +323,15 @@ async def update_session(
     document: str,
     session_id: str,
     data: SessionUpdate,
-    current_user: UserOut = Depends(get_current_user),
+    current_user: UserOut = Depends(require_roles("medico", "admin", "super_admin")),
 ):
     db = get_db()
     if db is None:
-        raise HTTPException(status_code=503, detail="Database not available")
+        raise HTTPException(status_code=503, detail="Base de datos no disponible")
 
     existing = await db.sessions.find_one({"_id": ObjectId(session_id), "document_number": document})
     if not existing:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sesión no encontrada")
 
     update = {}
     if data.symptoms:

@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, useMemo, useEffect } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { API } from '../config'
+import { apiFetch } from '../api/client'
+import { getAllCountries, getDepartments, getCities, type LocationOption } from '../data/locations'
 
 export default function Register() {
   const { user } = useAuth()
@@ -12,7 +13,7 @@ export default function Register() {
     document_number: '',
     email: '',
     phone: '',
-    country: 'Colombia',
+    country: '',
     department: '',
     city: '',
     birth_date: '',
@@ -24,9 +25,54 @@ export default function Register() {
   const [step, setStep] = useState<'form' | 'verify'>('form')
   const [code, setCode] = useState('')
   const [verifying, setVerifying] = useState(false)
+  const [cities, setCities] = useState<LocationOption[]>([])
+  const [loadingCities, setLoadingCities] = useState(false)
+
+  const countries: LocationOption[] = useMemo(() => getAllCountries(), [])
+  const departments: LocationOption[] = useMemo(
+    () => (form.country ? getDepartments(form.country) : []),
+    [form.country],
+  )
+
+  useEffect(() => {
+    if (!form.country || !form.department) {
+      setCities([])
+      return
+    }
+    let cancelled = false
+    setLoadingCities(true)
+    getCities(form.country, form.department)
+      .then(result => {
+        if (!cancelled) setCities(result)
+      })
+      .catch(() => {
+        if (!cancelled) setCities([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCities(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [form.country, form.department])
 
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(prev => ({ ...prev, [key]: e.target.value }))
+
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const country = e.target.value
+    setForm(prev => ({ ...prev, country, department: '', city: '' }))
+  }
+
+  const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const department = e.target.value
+    setForm(prev => ({ ...prev, department, city: '' }))
+  }
+
+  const cityName = cities.find(c => c.code === form.city)?.name ?? form.city
+
+  const countryName = countries.find(c => c.code === form.country)?.name ?? form.country
+  const departmentName = departments.find(d => d.code === form.department)?.name ?? form.department
 
   if (user) return <Navigate to="/" replace />
 
@@ -37,18 +83,21 @@ export default function Register() {
     try {
       const body = {
         ...form,
+        country: countryName,
+        department: departmentName,
+        city: cityName,
         name: `${form.first_name} ${form.last_name}`,
       }
-      const res = await fetch(API + '/api/auth/register', {
+      const res = await apiFetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        auth: false,
         body: JSON.stringify(body),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Registration failed')
       setStep('verify')
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al registrar')
     }
     setSubmitting(false)
   }
@@ -58,17 +107,17 @@ export default function Register() {
     setError('')
     setVerifying(true)
     try {
-      const res = await fetch(API + '/api/auth/verify-email', {
+      const res = await apiFetch('/api/auth/verify-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        auth: false,
         body: JSON.stringify({ email: form.email, code }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Verification failed')
       localStorage.setItem('token', data.access_token)
       window.location.href = '/'
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al verificar')
     }
     setVerifying(false)
   }
@@ -132,15 +181,38 @@ export default function Register() {
             <div className="auth-row auth-row-3">
               <div className="auth-field">
                 <label>País</label>
-                <input type="text" placeholder="Ej: Colombia" value={form.country} onChange={set('country')} required />
+                <select value={form.country} onChange={handleCountryChange} required>
+                  <option value="" disabled>Selecciona un país</option>
+                  {countries.map(c => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="auth-field">
                 <label>Departamento</label>
-                <input type="text" placeholder="Ej: Cundinamarca" value={form.department} onChange={set('department')} required />
+                <select value={form.department} onChange={handleDepartmentChange} required disabled={departments.length === 0}>
+                  <option value="" disabled>
+                    {departments.length === 0 ? 'Selecciona un país' : 'Selecciona un departamento'}
+                  </option>
+                  {departments.map(d => (
+                    <option key={d.code} value={d.code}>{d.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="auth-field">
                 <label>Ciudad</label>
-                <input type="text" placeholder="Ej: Bogotá" value={form.city} onChange={set('city')} required />
+                <select value={form.city} onChange={set('city')} required disabled={cities.length === 0}>
+                  <option value="" disabled>
+                    {loadingCities
+                      ? 'Cargando ciudades...'
+                      : cities.length === 0
+                        ? 'Selecciona un departamento'
+                        : 'Selecciona una ciudad'}
+                  </option>
+                  {cities.map(c => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
 

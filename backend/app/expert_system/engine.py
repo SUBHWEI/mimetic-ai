@@ -1,6 +1,5 @@
 from app.database.mongodb import get_db
-from app.expert_system.matcher import calculate_match
-from bson import ObjectId
+from app.expert_system.matcher import calculate_match, build_symptom_weights
 import re
 import unicodedata
 
@@ -11,16 +10,30 @@ def _strip_accents(s: str) -> str:
     return "".join(c for c in nfkd if not unicodedata.combining(c))
 
 
-async def diagnose(symptoms: list[str], min_score: float = 0.2) -> list[dict]:
+async def diagnose(
+    symptoms: list[str],
+    min_score: float = 0.2,
+    patient_info: dict | None = None,
+) -> list[dict]:
     db = get_db()
     if db is None:
         return []
 
     diseases = await db.diseases.find().to_list(length=None)
-    results = []
+    weights = build_symptom_weights(diseases)
 
+    # Compute demographic adjustment once per patient, not per disease.
+    demo = _demographic_profile(patient_info or {})
+
+    results = []
     for disease in diseases:
-        matched_count, score = calculate_match(symptoms, disease.get("symptoms", []))
+        matched_count, score = calculate_match(
+            symptoms, disease.get("symptoms", []), weights
+        )
+        if patient_info:
+            score = _apply_demographic_adjustment(
+                disease, score, demo
+            )
         if score >= min_score:
             results.append({
                 "disease_id": str(disease["_id"]),
@@ -35,6 +48,105 @@ async def diagnose(symptoms: list[str], min_score: float = 0.2) -> list[dict]:
 
     results.sort(key=lambda x: x["confidence"], reverse=True)
     return results
+
+
+def _demographic_profile(patient_info: dict) -> dict:
+    """Extract age/sex/bmi once from patient_info with robust parsing."""
+    age = None
+    raw_age = patient_info.get("age")
+    if raw_age is not None:
+        try:
+            age = float(raw_age)
+        except (ValueError, TypeError):
+            try:
+                birth = str(raw_age)
+                # "YYYY-MM-DD" birthdate -> approximate age
+                if re.match(r"\d{4}-\d{2}-\d{2}", birth):
+                    import datetime
+                    b = datetime.date.fromisoformat(birth[:10])
+                    age = (datetime.date.today() - b).days / 365.25
+            except (ValueError, TypeError):
+                pass
+
+    sex = ""
+    raw_sex = str(patient_info.get("gender", patient_info.get("sex", ""))).lower()
+    if "masc" in raw_sex or raw_sex == "m" or "hombr" in raw_sex:
+        sex = "male"
+    elif "fem" in raw_sex or raw_sex == "f" or "mujer" in raw_sex:
+        sex = "female"
+
+    return {"age": age, "sex": sex}
+
+
+def _apply_demographic_adjustment(disease: dict, score: float, profile: dict) -> float:
+    """Apply a soft multiplier to the score based on patient age/sex.
+
+    Returns the adjusted score (clamped to [0, 1]). Uses keyword heuristics
+    on the disease name to avoid needing a curated age range database.
+    """
+    if score <= 0:
+        return score
+
+    name = _strip_accents(disease["name"].lower())
+    age = profile.get("age")
+    sex = profile.get("sex")
+
+    factor = 1.0
+
+    # --- Age-based adjustments ---
+    if age is not None:
+        if "infarto" in name or "miocardio" in name or ("trombosis" in name and "venosa profunda" not in name):
+            # Ischemic events much more likely with age
+            if age >= 45:
+                factor *= 1.25
+            else:
+                factor *= 0.55
+
+        if "apendicitis" in name:
+            if 30 <= age <= 50:
+                factor *= 0.9
+            elif age < 20:
+                factor *= 1.1
+
+        if "prostat" in name:
+            if age < 50:
+                factor *= 0.4
+            else:
+                factor *= 1.3
+
+        if "menopaus" in name:
+            if age < 40:
+                factor *= 0.3
+
+        if "pediatr" in name or "sarampion" in name or "varicela" in name:
+            if age >= 18:
+                factor *= 0.5
+            else:
+                factor *= 1.2
+
+        if "osteoporosis" in name:
+            if age < 50:
+                factor *= 0.5
+
+        if "parkinson" in name:
+            if age < 55:
+                factor *= 0.6
+
+    # --- Sex-based adjustments ---
+    if sex == "male" and "prostat" in name:
+        factor *= 1.2
+    if sex == "female" and "prostat" in name:
+        factor *= 0.2
+    if sex == "female" and "menopaus" in name:
+        factor *= 2.0
+    if sex == "female" and "endometriosis" in name:
+        factor *= 1.5
+    if sex == "female" and "embarazo" in name:
+        factor *= 1.5
+    if sex == "male" and ("endometriosis" in name or "embarazo" in name or "menopaus" in name):
+        factor *= 0.2
+
+    return round(min(max(score * factor, 0.0), 1.0), 2)
 
 
 async def get_treatment(disease_name: str) -> dict | None:
@@ -257,7 +369,19 @@ def extract_symptoms_from_vitals(patient_info: dict) -> list[str]:
     return symptoms
 
 
-def narrow_diagnoses(diagnoses: list[dict], symptoms: list[str]) -> list[dict]:
+def narrow_diagnoses(
+    diagnoses: list[dict],
+    symptoms: list[str],
+    min_confidence: float = 0.25,
+    max_gap: float = 0.25,
+) -> list[dict]:
+    """Filter diagnoses to the most relevant ones.
+
+    - Drops any diagnosis below ``min_confidence`` absolute score.
+    - Drops diagnoses that fall more than ``max_gap`` below the top one
+      (even if above the absolute threshold), to avoid showing a "3rd"
+      candidate that is almost irrelevant compared to the leader.
+    """
     if not diagnoses or not symptoms:
         return diagnoses
 
@@ -275,7 +399,23 @@ def narrow_diagnoses(diagnoses: list[dict], symptoms: list[str]) -> list[dict]:
         reverse=True,
     )
 
-    return sorted_diags[:3] if len(sorted_diags) > 3 else sorted_diags
+    if not sorted_diags:
+        return sorted_diags
+
+    top_conf = sorted_diags[0].get("confidence", 0)
+
+    kept = []
+    for d in sorted_diags:
+        conf = d.get("confidence", 0)
+        if conf < min_confidence:
+            continue
+        if top_conf - conf > max_gap:
+            continue
+        kept.append(d)
+        if len(kept) >= 3:
+            break
+
+    return kept or sorted_diags[:1]
 
 
 def merge_vital_symptoms(patient_info: dict, existing_symptoms: list[str]) -> list[str]:

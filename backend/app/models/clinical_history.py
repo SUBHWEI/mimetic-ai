@@ -88,6 +88,7 @@ class Session(BaseModel):
     diagnoses: list[dict] = []
     treatment: Optional[dict] = None
     report_html: str = ""
+    doctor_review: Optional[dict] = None
 
 
 class SessionInDB(Session):
@@ -119,6 +120,7 @@ class SessionUpdate(BaseModel):
     diagnoses: list[dict] = []
     treatment: Optional[dict] = None
     report_html: str = ""
+    doctor_review: Optional[dict] = None
 
 
 class SessionOut(BaseModel):
@@ -148,6 +150,7 @@ class SessionOut(BaseModel):
     diagnoses: list[dict]
     treatment: Optional[dict]
     report_html: str
+    doctor_review: Optional[dict] = None
 
 
 # ── Search ───────────────────────────────────────────────────────

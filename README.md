@@ -48,7 +48,6 @@ Variables de entorno (ver `start_backend.ps1`):
 - `MONGODB_URL` — conexión a MongoDB Atlas
 - `SMTP_USER` / `SMTP_PASSWORD` — credenciales Gmail SMTP
 - `GOOGLE_CLIENT_ID` — OAuth de Google Login
-- `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` — OAuth de Facebook Login
 - `GMAIL_API_CLIENT_ID` / `GMAIL_API_CLIENT_SECRET` / `GMAIL_API_REFRESH_TOKEN` — Gmail API (HTTPS)
 
 ## Diagnóstico conversacional
@@ -61,9 +60,11 @@ El flujo principal es:
 4. **Tratamiento** — medicamentos recomendados con dosis, contraindicaciones, ajustes por peso/embarazo/alergias
 5. **Reporte PDF** — historia clínica completa lista para imprimir
 
+> **Verificación de correo:** todo registro (con email o con Google) queda bloqueado hasta que el usuario confirma un código de 6 dígitos enviado a su correo. El código es válido por 10 minutos.
+
 ### Funcionalidades del motor de diagnóstico
 
-- 50 enfermedades con síntomas y tratamientos (medicamentos, dosis, contraindicaciones)
+- 51 enfermedades con síntomas y tratamientos (medicamentos, dosis, contraindicaciones)
 - Interpreta lenguaje natural del médico (sinónimos, frases coloquiales)
 - Preguntas discriminantes cuando hay varios diagnósticos posibles
 - Auto-detección de síntomas desde signos vitales (fiebre > 37.5, taquipnea, PA alta, etc.)
@@ -77,6 +78,9 @@ El flujo principal es:
 |--------|------|-------------|
 | POST | `/api/auth/register` | Registro de paciente |
 | POST | `/api/auth/login` | Inicio de sesión |
+| POST | `/api/auth/social-login` | Inicio de sesión con Google |
+| POST | `/api/auth/social-register` | Registro con Google |
+| POST | `/api/auth/verify-email` | Verificar código de correo |
 | POST | `/api/auth/create-user` | Crear usuario (admin) |
 | GET | `/api/auth/me` | Perfil del usuario autenticado |
 | POST | `/api/converse` | Chat conversacional de diagnóstico |

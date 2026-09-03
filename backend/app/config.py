@@ -25,5 +25,13 @@ GMAIL_API_REFRESH_TOKEN = os.getenv("GMAIL_API_REFRESH_TOKEN", "")
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
-FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID", "")
-FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET", "")
+
+# Orígenes (dominios) permitidos por CORS. Separados por comas.
+CORS_ORIGINS = [
+    o.strip().rstrip("/")
+    for o in os.getenv(
+        "CORS_ORIGINS",
+        "https://mimetic-ai.vercel.app,http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
+    ).split(",")
+    if o.strip()
+]

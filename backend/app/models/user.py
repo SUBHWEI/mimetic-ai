@@ -3,6 +3,8 @@ from typing import Optional
 from bson import ObjectId
 from datetime import datetime
 
+VALID_ROLES = ("super_admin", "admin", "medico", "paciente")
+
 
 class User(BaseModel):
     id: Optional[str] = None
@@ -10,6 +12,7 @@ class User(BaseModel):
     name: str
     password_hash: str
     role: str = "paciente"
+    hospital_id: str = ""
     first_name: str = ""
     last_name: str = ""
     document_type: str = ""
@@ -20,6 +23,7 @@ class User(BaseModel):
     city: str = ""
     phone: str = ""
     verified: bool = False
+    active: bool = True
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -47,6 +51,7 @@ class UserCreateByAdmin(BaseModel):
     name: str
     password: str
     role: str
+    hospital_id: str = ""
 
 
 class UserLogin(BaseModel):
@@ -59,6 +64,7 @@ class UserOut(BaseModel):
     email: str
     name: str
     role: str
+    hospital_id: str = ""
     first_name: str
     last_name: str
     document_type: str
@@ -68,6 +74,7 @@ class UserOut(BaseModel):
     department: str
     city: str
     phone: str
+    active: bool = True
     created_at: datetime
 
 

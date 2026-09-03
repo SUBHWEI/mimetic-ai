@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.database.mongodb import get_db
+from app.auth.permissions import require_roles
 from bson import ObjectId
 from typing import Optional, Any
 
@@ -92,135 +93,165 @@ def _non_empty(data: dict) -> dict:
 # ── Symptoms ─────────────────────────────────────────────────────
 
 @router.post("/symptoms")
-async def create_symptom(data: SymptomCreate):
+async def create_symptom(
+    data: SymptomCreate,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     existing = await db.symptoms.find_one({"name": data.name})
     if existing:
-        raise HTTPException(status_code=409, detail="Symptom already exists")
+        raise HTTPException(status_code=409, detail="El síntoma ya existe")
     result = await db.symptoms.insert_one(data.model_dump())
     return {"id": str(result.inserted_id), "name": data.name}
 
 
 @router.get("/symptoms")
-async def list_symptoms():
+async def list_symptoms(current_user=Depends(require_roles("medico", "admin", "super_admin"))):
     db = get_db()
     symptoms = await db.symptoms.find().to_list(length=None)
     return [_symptom_out(s) for s in symptoms]
 
 
 @router.put("/symptoms/{symptom_id}")
-async def update_symptom(symptom_id: str, data: SymptomUpdate):
+async def update_symptom(
+    symptom_id: str,
+    data: SymptomUpdate,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     update = _non_empty(data.model_dump())
     if not update:
-        raise HTTPException(status_code=400, detail="Nothing to update")
+        raise HTTPException(status_code=400, detail="Nada que actualizar")
     if "name" in update:
         dup = await db.symptoms.find_one({"name": update["name"], "_id": {"$ne": ObjectId(symptom_id)}})
         if dup:
-            raise HTTPException(status_code=409, detail="Another symptom already uses that name")
+            raise HTTPException(status_code=409, detail="Otro síntoma ya usa ese nombre")
     res = await db.symptoms.update_one({"_id": ObjectId(symptom_id)}, {"$set": update})
     if res.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Symptom not found")
+        raise HTTPException(status_code=404, detail="Síntoma no encontrado")
     doc = await db.symptoms.find_one({"_id": ObjectId(symptom_id)})
     return _symptom_out(doc)
 
 
 @router.delete("/symptoms/{symptom_id}")
-async def delete_symptom(symptom_id: str):
+async def delete_symptom(
+    symptom_id: str,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     res = await db.symptoms.delete_one({"_id": ObjectId(symptom_id)})
     if res.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Symptom not found")
+        raise HTTPException(status_code=404, detail="Síntoma no encontrado")
     return {"deleted": True, "id": symptom_id}
 
 
 # ── Diseases ─────────────────────────────────────────────────────
 
 @router.post("/diseases")
-async def create_disease(data: DiseaseCreate):
+async def create_disease(
+    data: DiseaseCreate,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     existing = await db.diseases.find_one({"name": data.name})
     if existing:
-        raise HTTPException(status_code=409, detail="Disease already exists")
+        raise HTTPException(status_code=409, detail="La enfermedad ya existe")
     result = await db.diseases.insert_one(data.model_dump())
     return {"id": str(result.inserted_id), "name": data.name}
 
 
 @router.get("/diseases")
-async def list_diseases():
+async def list_diseases(current_user=Depends(require_roles("medico", "admin", "super_admin"))):
     db = get_db()
     diseases = await db.diseases.find().to_list(length=None)
     return [_disease_out(d) for d in diseases]
 
 
 @router.put("/diseases/{disease_id}")
-async def update_disease(disease_id: str, data: DiseaseUpdate):
+async def update_disease(
+    disease_id: str,
+    data: DiseaseUpdate,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     update = _non_empty(data.model_dump())
     if not update:
-        raise HTTPException(status_code=400, detail="Nothing to update")
+        raise HTTPException(status_code=400, detail="Nada que actualizar")
     if update.get("name"):
         dup = await db.diseases.find_one({"name": update["name"], "_id": {"$ne": ObjectId(disease_id)}})
         if dup:
-            raise HTTPException(status_code=409, detail="Another disease already uses that name")
+            raise HTTPException(status_code=409, detail="Otra enfermedad ya usa ese nombre")
     res = await db.diseases.update_one({"_id": ObjectId(disease_id)}, {"$set": update})
     if res.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Disease not found")
+        raise HTTPException(status_code=404, detail="Enfermedad no encontrada")
     doc = await db.diseases.find_one({"_id": ObjectId(disease_id)})
     return _disease_out(doc)
 
 
 @router.delete("/diseases/{disease_id}")
-async def delete_disease(disease_id: str):
+async def delete_disease(
+    disease_id: str,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     res = await db.diseases.delete_one({"_id": ObjectId(disease_id)})
     if res.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Disease not found")
+        raise HTTPException(status_code=404, detail="Enfermedad no encontrada")
     return {"deleted": True, "id": disease_id}
 
 
 # ── Treatments ───────────────────────────────────────────────────
 
 @router.post("/treatments")
-async def create_treatment(data: TreatmentCreate):
+async def create_treatment(
+    data: TreatmentCreate,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     existing = await db.treatments.find_one({"disease_name": data.disease_name})
     if existing:
-        raise HTTPException(status_code=409, detail="Treatment already exists for this disease")
+        raise HTTPException(status_code=409, detail="Ya existe un tratamiento para esta enfermedad")
     result = await db.treatments.insert_one(data.model_dump())
     return {"id": str(result.inserted_id), "disease_name": data.disease_name}
 
 
 @router.get("/treatments")
-async def list_treatments():
+async def list_treatments(current_user=Depends(require_roles("medico", "admin", "super_admin"))):
     db = get_db()
     treatments = await db.treatments.find().to_list(length=None)
     return [_treatment_out(t) for t in treatments]
 
 
 @router.put("/treatments/{treatment_id}")
-async def update_treatment(treatment_id: str, data: TreatmentUpdate):
+async def update_treatment(
+    treatment_id: str,
+    data: TreatmentUpdate,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     update = _non_empty(data.model_dump())
     if not update:
-        raise HTTPException(status_code=400, detail="Nothing to update")
+        raise HTTPException(status_code=400, detail="Nada que actualizar")
     if update.get("disease_name"):
         dup = await db.treatments.find_one({"disease_name": update["disease_name"], "_id": {"$ne": ObjectId(treatment_id)}})
         if dup:
-            raise HTTPException(status_code=409, detail="Another treatment already exists for that disease")
+            raise HTTPException(status_code=409, detail="Ya existe otro tratamiento para esa enfermedad")
     res = await db.treatments.update_one({"_id": ObjectId(treatment_id)}, {"$set": update})
     if res.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Treatment not found")
+        raise HTTPException(status_code=404, detail="Tratamiento no encontrado")
     doc = await db.treatments.find_one({"_id": ObjectId(treatment_id)})
     return _treatment_out(doc)
 
 
 @router.delete("/treatments/{treatment_id}")
-async def delete_treatment(treatment_id: str):
+async def delete_treatment(
+    treatment_id: str,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     res = await db.treatments.delete_one({"_id": ObjectId(treatment_id)})
     if res.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Treatment not found")
+        raise HTTPException(status_code=404, detail="Tratamiento no encontrado")
     return {"deleted": True, "id": treatment_id}
 
 
@@ -233,10 +264,13 @@ class BulkImport(BaseModel):
 
 
 @router.post("/bulk")
-async def bulk_import(data: BulkImport):
+async def bulk_import(
+    data: BulkImport,
+    current_user=Depends(require_roles("admin", "super_admin")),
+):
     db = get_db()
     if data.collection not in ("symptoms", "diseases", "treatments"):
-        raise HTTPException(status_code=400, detail="collection must be symptoms, diseases or treatments")
+        raise HTTPException(status_code=400, detail="La colección debe ser symptoms, diseases o treatments")
     coll = db[data.collection]
     inserted = 0
     updated = 0
@@ -258,7 +292,7 @@ async def bulk_import(data: BulkImport):
 # ── Integridad ───────────────────────────────────────────────────
 
 @router.get("/integrity")
-async def integrity_check():
+async def integrity_check(current_user=Depends(require_roles("medico", "admin", "super_admin"))):
     db = get_db()
     report = {"missing_symptoms": [], "treatments_without_disease": [], "diseases_without_treatment": []}
 

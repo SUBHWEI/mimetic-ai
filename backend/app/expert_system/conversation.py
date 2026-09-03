@@ -118,7 +118,7 @@ async def generate_followup(symptoms: list[str], patient_info: dict | None = Non
     if patient_info:
         symptoms = merge_vital_symptoms(patient_info, symptoms)
 
-    results = await diagnose(symptoms)
+    results = await diagnose(symptoms, patient_info=patient_info)
     if not results:
         return {
             "question": "No encontré enfermedades que coincidan con esos síntomas. ¿Podrías describir mejor los síntomas?",
@@ -148,7 +148,26 @@ async def generate_followup(symptoms: list[str], patient_info: dict | None = Non
 
     already_mentioned = set(s.lower().strip() for s in symptoms)
 
-    # --- Discriminating symptoms (unique to one top disease) ---
+    # --- Information gain ranking for candidate symptoms ---
+    # For each unmentioned symptom, estimate how informative it is to ask
+    # about given the current top diagnoses. A symptom that splits the top
+    # diseases into "have it" vs "don't have it" roughly evenly carries more
+    # information than one all or none of them share.
+    candidates: dict[str, float] = {}
+    for d_name in top_names:
+        for s in disease_symptoms_map.get(d_name, set()):
+            if s in already_mentioned:
+                continue
+            freq = 0
+            for other in top_names:
+                if s in disease_symptoms_map.get(other, set()):
+                    freq += 1
+            # info = 2 * (p * (1 - p)), maximized when freq splits the top set
+            p = freq / len(top_names)
+            candidates[s] = candidates.get(s, 0.0) + (2.0 * p * (1.0 - p))
+
+    ranked = sorted(candidates.items(), key=lambda kv: -kv[1])
+
     discriminating: dict[str, list[str]] = {}
     for d_name in top_names:
         ds = disease_symptoms_map.get(d_name, set())
@@ -173,41 +192,53 @@ async def generate_followup(symptoms: list[str], patient_info: dict | None = Non
     shared_useful.sort(key=lambda s: -shared_counter[s])
 
     # --- Pick the best questions ---
+    # Order candidates by information gain first, breaking ties with the
+    # discriminating/shared logic.
     picks: list[str] = []
     questions_asked: list[str] = []
 
-    # 1st priority: discriminating symptoms
-    for d_name in top_names:
-        for sym in discriminating.get(d_name, []):
-            if len(picks) >= MAX_FOLLOWUP_SUGGESTIONS:
-                break
-            if sym not in picks:
-                q = _build_specific_question(sym)
-                if q and q not in questions_asked:
-                    picks.append(sym)
-                    questions_asked.append(q)
+    def _try_add(sym: str) -> bool:
+        """Return True if the symptom was added as a question."""
+        nonlocal picks
+        if len(picks) >= MAX_FOLLOWUP_SUGGESTIONS:
+            return False
+        if sym in picks:
+            return False
+        q = _build_specific_question(sym)
+        if q and q not in questions_asked:
+            picks.append(sym)
+            questions_asked.append(q)
+            return True
+        return False
 
-    # 2nd priority: fill remaining slots with useful shared symptoms
-    for sym in shared_useful:
+    # 1st priority: highest information-gain symptoms (split the candidates)
+    for sym, _info in ranked:
         if len(picks) >= MAX_FOLLOWUP_SUGGESTIONS:
             break
-        if sym not in picks:
-            q = _build_specific_question(sym)
-            if q and q not in questions_asked:
-                picks.append(sym)
-                questions_asked.append(q)
+        _try_add(sym)
 
-    # 3rd priority: any remaining symptom from top diseases
+    # 2nd priority: any remaining discriminating symptoms not already picked
+    if len(picks) < MAX_FOLLOWUP_SUGGESTIONS:
+        for d_name in top_names:
+            for sym in discriminating.get(d_name, []):
+                if len(picks) >= MAX_FOLLOWUP_SUGGESTIONS:
+                    break
+                _try_add(sym)
+
+    # 3rd priority: any remaining shared useful symptoms
+    if len(picks) < MAX_FOLLOWUP_SUGGESTIONS:
+        for sym in shared_useful:
+            if len(picks) >= MAX_FOLLOWUP_SUGGESTIONS:
+                break
+            _try_add(sym)
+
+    # 4th priority: any remaining symptom from top diseases (fallback)
     if len(picks) < MAX_FOLLOWUP_SUGGESTIONS:
         for d_name in top_names:
             for sym in disease_symptoms_map.get(d_name, set()):
                 if len(picks) >= MAX_FOLLOWUP_SUGGESTIONS:
                     break
-                if sym not in already_mentioned and sym not in picks:
-                    picks.append(sym)
-                    q = _build_specific_question(sym)
-                    if q and q not in questions_asked:
-                        questions_asked.append(q)
+                _try_add(sym)
 
     # --- Determine if ready ---
     # Ready if: only 1 diagnosis, OR (<= TARGET diagnoses AND no questions to ask)
