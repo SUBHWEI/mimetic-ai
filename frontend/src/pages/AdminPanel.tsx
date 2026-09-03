@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../api/client'
 import CreateUserForm from '../components/admin/CreateUserForm'
 import UserList from '../components/admin/UserList'
+import ExpertSystemImport from '../components/admin/ExpertSystemImport'
 
 type Hospital = {
   id: string
@@ -19,7 +20,7 @@ export default function AdminPanel() {
   const { user, logout } = useAuth()
   const isSuperAdmin = user?.role === 'super_admin'
 
-  const [tab, setTab] = useState<'users' | 'hospitals'>('users')
+  const [tab, setTab] = useState<'users' | 'hospitals' | 'expert'>('users')
   const [hospitals, setHospitals] = useState<Hospital[]>([])
   const [hospError, setHospError] = useState('')
   const [hospLoading, setHospLoading] = useState(false)
@@ -114,6 +115,14 @@ export default function AdminPanel() {
               onClick={() => setTab('hospitals')}
             >
               Hospitales
+            </button>
+          )}
+          {isSuperAdmin && (
+            <button
+              className={tab === 'expert' ? 'admin-tab active' : 'admin-tab'}
+              onClick={() => setTab('expert')}
+            >
+              Sistema experto
             </button>
           )}
         </div>
@@ -225,6 +234,12 @@ export default function AdminPanel() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {tab === 'expert' && isSuperAdmin && (
+          <div className="admin-grid">
+            <ExpertSystemImport />
           </div>
         )}
       </div>

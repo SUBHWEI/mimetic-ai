@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from pydantic import BaseModel
 from app.database.mongodb import get_db
 from app.auth.permissions import require_roles
@@ -272,6 +272,44 @@ async def delete_treatment(
 
 # ── Bulk import (ingreso masivo) ─────────────────────────────────
 
+VALID_COLLECTIONS = ("symptoms", "diseases", "treatments")
+
+KEY_FIELD = {
+    "symptoms": "name",
+    "diseases": "name",
+    "treatments": "disease_name",
+}
+
+
+async def _upsert_docs(coll, key_field: str, docs: list[dict]) -> dict:
+    """Upsert idempotente y normalizado de documentos por clave.
+
+    Devuelve conteos de insertados/actualizados y errores por documento.
+    """
+    from pymongo.errors import DuplicateKeyError
+
+    inserted = 0
+    updated = 0
+    errores = []
+    for i, doc in enumerate(docs):
+        key = normalize_text(doc.get(key_field) or "")
+        if not key:
+            errores.append({"index": i, "reason": "missing key field"})
+            continue
+        patch = {k: v for k, v in doc.items() if k != "_id"}
+        patch[key_field] = key
+        try:
+            res = await coll.update_one({key_field: key}, {"$set": patch}, upsert=True)
+        except DuplicateKeyError:
+            errores.append({"index": i, "reason": "duplicate key (posible colisión con acentos previos)"})
+            continue
+        if res.upserted_id is not None:
+            inserted += 1
+        else:
+            updated += 1
+    return {"inserted": inserted, "updated": updated, "errors": errores}
+
+
 class BulkImport(BaseModel):
     collection: str  # symptoms | diseases | treatments
     documents: list[dict]
@@ -281,33 +319,158 @@ class BulkImport(BaseModel):
 @router.post("/bulk")
 async def bulk_import(
     data: BulkImport,
-    current_user=Depends(require_roles("admin", "super_admin")),
+    current_user=Depends(require_roles("super_admin")),
 ):
     db = get_db()
-    if data.collection not in ("symptoms", "diseases", "treatments"):
+    if data.collection not in VALID_COLLECTIONS:
         raise HTTPException(status_code=400, detail="La colección debe ser symptoms, diseases o treatments")
     coll = db[data.collection]
-    from pymongo.errors import DuplicateKeyError
-    inserted = 0
-    updated = 0
-    errores = []
-    for i, doc in enumerate(data.documents):
-        key = normalize_text(doc.get(data.key_field) or "")
-        if not key:
-            errores.append({"index": i, "reason": "missing key field"})
-            continue
-        patch = {k: v for k, v in doc.items() if k != "_id"}
-        patch[data.key_field] = key
+    result = await _upsert_docs(coll, data.key_field, data.documents)
+    return {"inserted": result["inserted"], "updated": result["updated"], "errors": result["errors"]}
+
+
+# ── Importación por archivo (CSV / Excel / JSON) ─────────────────
+# Disponible exclusivamente para super_admin.
+
+def _clean_field_name(name: str) -> str:
+    """Normaliza nombres de columna (minúsculas, sin acentos/espacios)."""
+    n = normalize_text(name)
+    return n.replace(" ", "_").replace("-", "_")
+
+
+def _split_list(value: Any) -> list[str]:
+    """Convierte un valor en lista de strings normalizados (separa por | o ,)."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        items = value
+    else:
+        text = str(value)
+        items = [p for p in text.replace(",", "|").split("|") if p.strip()]
+    seen = set()
+    out = []
+    for it in items:
+        n = normalize_text(it)
+        if n and n not in seen:
+            seen.add(n)
+            out.append(n)
+    return out
+
+
+def _parse_json_docs(raw, collection: str) -> list[dict]:
+    """Extrae documentos desde JSON: dict completo o array de una colección."""
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, dict):
+        if collection in raw and isinstance(raw[collection], list):
+            return raw[collection]
+        # Objeto único
+        return [raw]
+    raise HTTPException(status_code=400, detail="JSON no reconocido: debe ser un array o un objeto con la colección")
+
+
+def _parse_tabular_docs(rows: list[dict], collection: str) -> dict:
+    """Convierte filas tabulares en documentos para la colección indicada."""
+    mapped: list[dict] = []
+    for i, row in enumerate(rows):
+        clean = {_clean_field_name(k): v for k, v in row.items() if k is not None}
+        doc = None
+        if collection == "symptoms":
+            if clean.get("name"):
+                doc = {
+                    "name": str(clean["name"]),
+                    "description": str(clean.get("description") or ""),
+                    "category": str(clean.get("category") or "generales"),
+                }
+        elif collection == "diseases":
+            if clean.get("name"):
+                doc = {
+                    "name": str(clean["name"]),
+                    "description": str(clean.get("description") or ""),
+                    "severity": str(clean.get("severity") or "moderate"),
+                    "symptoms": _split_list(clean.get("symptoms")),
+                }
+        else:  # treatments
+            key = clean.get("disease_name") or clean.get("diseasename") or clean.get("name")
+            if key:
+                doc = {
+                    "disease_name": str(key),
+                    "general_recommendations": str(clean.get("general_recommendations") or clean.get("generalrecommendations") or ""),
+                    "medicines": [],
+                    "alternative_medicines": [],
+                    "non_pharmacological_treatments": _split_list(clean.get("non_pharmacological_treatments") or clean.get("nonpharmacologicaltreatments")),
+                }
+        if doc is not None:
+            mapped.append(doc)
+    return {"docs": mapped}
+
+
+@router.post("/import-file")
+async def import_file(
+    file: UploadFile = File(...),
+    collection: str = Form(...),
+    current_user=Depends(require_roles("super_admin")),
+):
+    """Importa síntomas, enfermedades o tratamientos desde CSV, Excel o JSON.
+
+    El archivo (multipart) se parsea según su extensión y se inserta/actualiza
+    de forma idempotente en la colección indicada, normalizando las claves.
+    """
+    if collection not in VALID_COLLECTIONS:
+        raise HTTPException(status_code=400, detail="La colección debe ser symptoms, diseases o treatments")
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="El archivo está vacío")
+
+    filename = (file.filename or "").lower()
+    ext = filename.rsplit(".", 1)[-1] if "." in filename else ""
+
+    docs: list[dict] = []
+
+    if ext == "json":
+        import json as _json
         try:
-            res = await coll.update_one({data.key_field: key}, {"$set": patch}, upsert=True)
-        except DuplicateKeyError:
-            errores.append({"index": i, "reason": "duplicate key (posible colisión con acentos previos)"})
-            continue
-        if res.upserted_id is not None:
-            inserted += 1
-        else:
-            updated += 1
-    return {"inserted": inserted, "updated": updated, "errors": errores}
+            data = _json.loads(raw.decode("utf-8"))
+        except Exception:
+            raise HTTPException(status_code=400, detail="JSON inválido")
+        docs = _parse_json_docs(data, collection)
+    elif ext in ("csv", "txt"):
+        import csv as _csv
+        import io as _io
+        text = raw.decode("utf-8-sig", errors="replace")
+        reader = _csv.DictReader(_io.StringIO(text))
+        rows = list(reader)
+        docs = _parse_tabular_docs(rows, collection)["docs"]
+    elif ext in ("xlsx", "xls"):
+        import io as _io
+        try:
+            import pandas as pd
+        except ImportError:
+            raise HTTPException(status_code=400, detail="pandas no está instalado en el servidor para leer Excel")
+        try:
+            df = pd.read_excel(_io.BytesIO(raw)).fillna("").astype(str)
+            rows = df.to_dict("records")
+        except Exception:
+            raise HTTPException(status_code=400, detail="No se pudo leer el archivo Excel")
+        docs = _parse_tabular_docs(rows, collection)["docs"]
+    else:
+        raise HTTPException(status_code=400, detail=f"Formato no soportado: {ext or 'desconocido'}. Usa .json, .csv o .xlsx")
+
+    if not docs:
+        raise HTTPException(status_code=422, detail="No se encontraron documentos válidos en el archivo")
+
+    db = get_db()
+    coll = db[collection]
+    result = await _upsert_docs(coll, KEY_FIELD[collection], docs)
+    return {
+        "collection": collection,
+        "file": filename,
+        "detected": len(docs),
+        "inserted": result["inserted"],
+        "updated": result["updated"],
+        "errors": result["errors"],
+    }
 
 
 # ── Integridad ───────────────────────────────────────────────────
