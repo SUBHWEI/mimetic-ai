@@ -73,7 +73,7 @@ async def generate_report(
     hour_start = esc(hour_start_raw)
     hour_end = time_str
 
-    results = await diagnose(request.symptoms) if request.symptoms else []
+    results = await diagnose(request.symptoms, patient_info=request.patient_info) if request.symptoms else []
     tx = None
     if request.selected_diagnosis:
         tx = await recommend_treatment(request.selected_diagnosis, request.patient_info)

@@ -6905,12 +6905,44 @@ async def _upsert_many(collection, documents, key_field):
     return count
 
 
+async def dedupe_collection(collection, key_field: str) -> int:
+    """Elimina documentos duplicados dejando el de menor _id.
+
+    Necesario porque el índice único sobre ``key_field`` causa
+    ``DuplicateKeyError`` en el upsert si la colección ya contiene duplicados
+    (p. ej. síntomas registrados dos veces con el mismo nombre).
+    """
+    removed = 0
+    pipeline = [
+        {"$sort": {"_id": 1}},
+        {"$group": {"_id": f"${key_field}", "keep": {"$first": "$_id"}}},
+    ]
+    try:
+        grouped = await collection.aggregate(pipeline).to_list(length=None)
+    except Exception:
+        return 0
+    for group in grouped:
+        count = await collection.count_documents({key_field: group["_id"]})
+        if count > 1:
+            await collection.delete_many(
+                {key_field: group["_id"], "_id": {"$ne": group["keep"]}}
+            )
+            removed += count - 1
+    return removed
+
+
 async def seed():
     """Siembra los catálogos de forma idempotente (no borra lo existente)."""
     client = AsyncIOMotorClient(MONGO_URL)
     db = client[DB_NAME]
 
     try:
+        # Limpia duplicados residuales para que los upserts idempotentes
+        # no fallen por el índice único.
+        await dedupe_collection(db.symptoms, "name")
+        await dedupe_collection(db.diseases, "name")
+        await dedupe_collection(db.treatments, "disease_name")
+
         n_symptoms = await _upsert_many(db.symptoms, symptoms, "name")
         print(f"Upserted {n_symptoms} symptoms")
 

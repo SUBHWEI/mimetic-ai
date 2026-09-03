@@ -64,7 +64,7 @@ async def converse(
         if category == "ready_report":
             if already_has_symptoms:
                 from app.expert_system.engine import diagnose as diag_engine
-                all_diags = await diag_engine(request.current_symptoms)
+                all_diags = await diag_engine(request.current_symptoms, patient_info=request.patient_info)
                 all_diags = narrow_diagnoses(all_diags, request.current_symptoms)
                 if all_diags:
                     lines = [f"- {d['disease_name']} ({d['confidence']:.0%})" for d in all_diags[:3]]

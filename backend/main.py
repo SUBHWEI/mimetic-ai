@@ -19,7 +19,12 @@ async def auto_seed():
     if db is None:
         return
     from seed_data import symptoms, diseases, treatments
-    from seed_data import _upsert_many
+    from seed_data import _upsert_many, dedupe_collection
+
+    logger.info("Deduplicating knowledge base (fix DuplicateKeyError)...")
+    await dedupe_collection(db.symptoms, "name")
+    await dedupe_collection(db.diseases, "name")
+    await dedupe_collection(db.treatments, "disease_name")
 
     logger.info("Synchronizing knowledge base (idempotent upsert)...")
     n_s = await _upsert_many(db.symptoms, symptoms, "name")
