@@ -66,6 +66,8 @@ class Session(BaseModel):
     document_number: str
     doctor_id: str
     doctor_name: str = ""
+    hospital_id: str = ""
+    hospital_name: str = ""
     date: datetime = Field(default_factory=datetime.utcnow)
     consultation_reason: str = ""
     symptom_evolution: str = ""
@@ -128,6 +130,8 @@ class SessionOut(BaseModel):
     document_number: str
     doctor_id: str
     doctor_name: str
+    hospital_id: str = ""
+    hospital_name: str = ""
     date: datetime
     consultation_reason: str
     symptom_evolution: str
@@ -151,6 +155,27 @@ class SessionOut(BaseModel):
     treatment: Optional[dict]
     report_html: str
     doctor_review: Optional[dict] = None
+
+
+# ── Patient Views ────────────────────────────────────────────────
+
+class PatientSessionSummary(BaseModel):
+    id: str
+    date: datetime
+    hospital_name: str = ""
+    doctor_name: str = ""
+    consultation_reason: str = ""
+    diagnoses: list[dict] = []
+    has_treatment: bool = False
+    symptoms: list[str] = []
+
+
+class PatientTreatmentSummary(BaseModel):
+    disease_name: str
+    medicines: list[dict] = []
+    general_recommendations: str = ""
+    session_date: datetime
+    hospital_name: str = ""
 
 
 # ── Search ───────────────────────────────────────────────────────
