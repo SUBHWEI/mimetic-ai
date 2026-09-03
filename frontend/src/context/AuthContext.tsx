@@ -7,6 +7,8 @@ type User = {
   name: string
   role: string
   hospital_id: string
+  first_name: string
+  last_name: string
   created_at: string
 }
 
