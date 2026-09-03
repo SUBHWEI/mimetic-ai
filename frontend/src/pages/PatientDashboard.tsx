@@ -15,14 +15,17 @@ type Tab = 'resumen' | 'historial' | 'tratamientos'
 
 const TZ = 'America/Bogota'
 
+function parseDate(dateStr: string): Date {
+  const s = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z'
+  return new Date(s)
+}
+
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: TZ })
+  return parseDate(dateStr).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: TZ })
 }
 
 function formatTime(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: TZ })
+  return parseDate(dateStr).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: TZ })
 }
 
 function severityColor(sev?: string): string {
@@ -312,9 +315,9 @@ function HistorialTab({ sessions, expandedSession, onToggleExpand, onViewDetail 
           <div className="pd-timeline-card">
             <div className="pd-timeline-header" onClick={() => onToggleExpand(session.id)}>
               <div className="pd-timeline-date">
-                <span className="pd-date-day">{new Date(session.date).toLocaleDateString('es-CO', { day: 'numeric', timeZone: TZ })}</span>
-                <span className="pd-date-month">{new Date(session.date).toLocaleDateString('es-CO', { month: 'short', timeZone: TZ })}</span>
-                <span className="pd-date-year">{new Date(session.date).toLocaleDateString('es-CO', { year: 'numeric', timeZone: TZ })}</span>
+                <span className="pd-date-day">{parseDate(session.date).toLocaleDateString('es-CO', { day: 'numeric', timeZone: TZ })}</span>
+                <span className="pd-date-month">{parseDate(session.date).toLocaleDateString('es-CO', { month: 'short', timeZone: TZ })}</span>
+                <span className="pd-date-year">{parseDate(session.date).toLocaleDateString('es-CO', { year: 'numeric', timeZone: TZ })}</span>
               </div>
               <div className="pd-timeline-info">
                 <div className="pd-timeline-reason">{session.consultation_reason || 'Consulta médica'}</div>
