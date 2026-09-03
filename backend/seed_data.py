@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
+from app.utils import normalize_text
+
 load_dotenv()
 
 MONGO_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
@@ -6891,43 +6893,72 @@ treatments = [
 
 
 async def _upsert_many(collection, documents, key_field):
-    """Inserta o actualiza documentos por un campo clave (idempotente)."""
+    """Inserta o actualiza documentos por un campo clave (idempotente).
+
+    El valor de ``key_field`` se normaliza (lowercase + sin acentos) para que
+    el seed no reintroduzca variantes con tilde ("Vómito") que inflarían el
+    catálogo tras la deduplicación.
+    """
     count = 0
     for doc in documents:
         key_value = doc.get(key_field)
         if key_value is None:
             continue
+        key_value = normalize_text(key_value)
+        if not key_value:
+            continue
         filter_clause = {key_field: key_value}
         # El _id no se debe reasignar al hacer `$set` de todo el documento
         patch = {k: v for k, v in doc.items() if k != "_id"}
+        patch[key_field] = key_value
         await collection.update_one(filter_clause, {"$set": patch}, upsert=True)
         count += 1
     return count
 
 
 async def dedupe_collection(collection, key_field: str) -> int:
-    """Elimina documentos duplicados dejando el de menor _id.
+    """Elimina documentos duplicados dejando el de menor _id y unifica la clave.
 
-    Necesario porque el índice único sobre ``key_field`` causa
-    ``DuplicateKeyError`` en el upsert si la colección ya contiene duplicados
-    (p. ej. síntomas registrados dos veces con el mismo nombre).
+    Agrupa por el valor **normalizado** de ``key_field`` (lowercase + sin
+    acentos) para colapsar colisiones como "Vómito"/"vomito" que inflan el
+    catálogo. Conserva el documento de menor ``_id``, elimina los redundantes
+    y actualiza el campo conservado al valor normalizado canónico.
     """
-    removed = 0
-    pipeline = [
-        {"$sort": {"_id": 1}},
-        {"$group": {"_id": f"${key_field}", "keep": {"$first": "$_id"}}},
-    ]
+    docs = None
     try:
-        grouped = await collection.aggregate(pipeline).to_list(length=None)
+        docs = await collection.find({key_field: {"$exists": True, "$ne": None}}).to_list(length=None)
     except Exception:
         return 0
-    for group in grouped:
-        count = await collection.count_documents({key_field: group["_id"]})
-        if count > 1:
-            await collection.delete_many(
-                {key_field: group["_id"], "_id": {"$ne": group["keep"]}}
-            )
-            removed += count - 1
+    if docs is None:
+        return 0
+
+    groups: dict[str, dict] = {}
+    for doc in docs:
+        key = normalize_text(doc.get(key_field) or "")
+        if not key:
+            continue
+        existing = groups.get(key)
+        if existing is None or doc["_id"] < existing["_id"]:
+            groups[key] = doc
+
+    to_remove = []
+    for doc in docs:
+        key = normalize_text(doc.get(key_field) or "")
+        if not key or key not in groups:
+            continue
+        if doc["_id"] != groups[key]["_id"]:
+            to_remove.append(doc["_id"])
+
+    removed = 0
+    if to_remove:
+        await collection.delete_many({"_id": {"$in": to_remove}})
+        removed = len(to_remove)
+
+    for key, keep in groups.items():
+        current = keep.get(key_field)
+        if current is not None and current != key:
+            await collection.update_one({"_id": keep["_id"]}, {"$set": {key_field: key}})
+
     return removed
 
 

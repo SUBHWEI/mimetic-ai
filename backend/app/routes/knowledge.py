@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.database.mongodb import get_db
 from app.auth.permissions import require_roles
+from app.utils import normalize_text
 from bson import ObjectId
 from typing import Optional, Any
 
@@ -98,11 +99,14 @@ async def create_symptom(
     current_user=Depends(require_roles("admin", "super_admin")),
 ):
     db = get_db()
-    existing = await db.symptoms.find_one({"name": data.name})
+    name = normalize_text(data.name)
+    if not name:
+        raise HTTPException(status_code=422, detail="Nombre inválido")
+    existing = await db.symptoms.find_one({"name": name})
     if existing:
         raise HTTPException(status_code=409, detail="El síntoma ya existe")
-    result = await db.symptoms.insert_one(data.model_dump())
-    return {"id": str(result.inserted_id), "name": data.name}
+    result = await db.symptoms.insert_one({"name": name, "description": data.description, "category": data.category})
+    return {"id": str(result.inserted_id), "name": name}
 
 
 @router.get("/symptoms")
@@ -123,6 +127,7 @@ async def update_symptom(
     if not update:
         raise HTTPException(status_code=400, detail="Nada que actualizar")
     if "name" in update:
+        update["name"] = normalize_text(update["name"])
         dup = await db.symptoms.find_one({"name": update["name"], "_id": {"$ne": ObjectId(symptom_id)}})
         if dup:
             raise HTTPException(status_code=409, detail="Otro síntoma ya usa ese nombre")
@@ -153,11 +158,14 @@ async def create_disease(
     current_user=Depends(require_roles("admin", "super_admin")),
 ):
     db = get_db()
-    existing = await db.diseases.find_one({"name": data.name})
+    name = normalize_text(data.name)
+    if not name:
+        raise HTTPException(status_code=422, detail="Nombre inválido")
+    existing = await db.diseases.find_one({"name": name})
     if existing:
         raise HTTPException(status_code=409, detail="La enfermedad ya existe")
-    result = await db.diseases.insert_one(data.model_dump())
-    return {"id": str(result.inserted_id), "name": data.name}
+    result = await db.diseases.insert_one({"name": name, "description": data.description, "symptoms": [normalize_text(s) for s in data.symptoms if normalize_text(s)], "severity": data.severity})
+    return {"id": str(result.inserted_id), "name": name}
 
 
 @router.get("/diseases")
@@ -178,9 +186,12 @@ async def update_disease(
     if not update:
         raise HTTPException(status_code=400, detail="Nada que actualizar")
     if update.get("name"):
+        update["name"] = normalize_text(update["name"])
         dup = await db.diseases.find_one({"name": update["name"], "_id": {"$ne": ObjectId(disease_id)}})
         if dup:
             raise HTTPException(status_code=409, detail="Otra enfermedad ya usa ese nombre")
+    if update.get("symptoms"):
+        update["symptoms"] = list({normalize_text(s) for s in update["symptoms"] if normalize_text(s)})
     res = await db.diseases.update_one({"_id": ObjectId(disease_id)}, {"$set": update})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Enfermedad no encontrada")
@@ -208,11 +219,14 @@ async def create_treatment(
     current_user=Depends(require_roles("admin", "super_admin")),
 ):
     db = get_db()
-    existing = await db.treatments.find_one({"disease_name": data.disease_name})
+    disease_name = normalize_text(data.disease_name)
+    if not disease_name:
+        raise HTTPException(status_code=422, detail="Disease name inválido")
+    existing = await db.treatments.find_one({"disease_name": disease_name})
     if existing:
         raise HTTPException(status_code=409, detail="Ya existe un tratamiento para esta enfermedad")
-    result = await db.treatments.insert_one(data.model_dump())
-    return {"id": str(result.inserted_id), "disease_name": data.disease_name}
+    result = await db.treatments.insert_one({"disease_name": disease_name, "medicines": data.medicines, "general_recommendations": data.general_recommendations, "source": data.source})
+    return {"id": str(result.inserted_id), "disease_name": disease_name}
 
 
 @router.get("/treatments")
@@ -233,6 +247,7 @@ async def update_treatment(
     if not update:
         raise HTTPException(status_code=400, detail="Nada que actualizar")
     if update.get("disease_name"):
+        update["disease_name"] = normalize_text(update["disease_name"])
         dup = await db.treatments.find_one({"disease_name": update["disease_name"], "_id": {"$ne": ObjectId(treatment_id)}})
         if dup:
             raise HTTPException(status_code=409, detail="Ya existe otro tratamiento para esa enfermedad")
@@ -272,16 +287,22 @@ async def bulk_import(
     if data.collection not in ("symptoms", "diseases", "treatments"):
         raise HTTPException(status_code=400, detail="La colección debe ser symptoms, diseases o treatments")
     coll = db[data.collection]
+    from pymongo.errors import DuplicateKeyError
     inserted = 0
     updated = 0
     errores = []
     for i, doc in enumerate(data.documents):
-        key = doc.get(data.key_field)
+        key = normalize_text(doc.get(data.key_field) or "")
         if not key:
             errores.append({"index": i, "reason": "missing key field"})
             continue
         patch = {k: v for k, v in doc.items() if k != "_id"}
-        res = await coll.update_one({data.key_field: key}, {"$set": patch}, upsert=True)
+        patch[data.key_field] = key
+        try:
+            res = await coll.update_one({data.key_field: key}, {"$set": patch}, upsert=True)
+        except DuplicateKeyError:
+            errores.append({"index": i, "reason": "duplicate key (posible colisión con acentos previos)"})
+            continue
         if res.upserted_id is not None:
             inserted += 1
         else:
