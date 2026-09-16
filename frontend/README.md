@@ -1,50 +1,77 @@
-# React + TypeScript + Vite
+# MIMETIC — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interfaz clínica del sistema experto de diagnóstico médico. **React + Vite + TypeScript** desplegada en Vercel.
 
-Currently, two official plugins are available:
+## Inicio rápido
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+npm install
+npx vite --port 5173
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+Variables de entorno (`.env` en la raíz del frontend):
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+| Variable | Uso |
+|----------|-----|
+| `VITE_API_URL` | URL del backend (en dev `http://localhost:8001`; en Vercel la del backend de Render) |
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+> `vite.config.ts` ya define el proxy `/api` → `http://localhost:8001` en desarrollo.
+
+## Estructura
+
 ```
+src/
+├── api/
+│   └── client.ts            # Cliente HTTP central (JWT, FormData/multipart, manejo 401/403)
+├── auth/
+│   └── AuthContext.tsx      # Sesión, roles, verificación de correo pendiente
+├── components/
+│   ├── admin/
+│   │   ├── ExpertSystemImport.tsx   # Importación del catálogo (super_admin)
+│   │   ├── UserManagement.tsx
+│   │   └── HospitalManagement.tsx
+│   ├── chat/                # Componentes del chat de diagnóstico por fases
+│   └── ...
+├── pages/
+│   ├── AdminPanel.tsx       # Panel con pestañas (solo admin/super_admin)
+│   ├── Register.tsx         # Registro con cascada País/Departamento/Ciudad
+│   ├── Login.tsx
+│   ├── PatientDashboard.tsx
+│   └── ...
+└── App.tsx                  # React Router + rutas protegidas por rol
+```
+
+## Rutas principales
+
+| Ruta | Acceso | Vista |
+|------|--------|-------|
+| `/` | público | Login (correo o Google) |
+| `/register` | público | Registro con verificación de correo (6 dígitos) |
+| `/admin` | `admin` / `super_admin` | Panel de administración |
+| `/chat` | `medico` | Chat de diagnóstico conversacional |
+| `/paciente` | `paciente` | Dashboard del paciente |
+| `/share/:id` | público | Compartir historia clínica |
+
+## Panel de administración (`/admin`)
+
+Pestañas visibles según rol:
+
+| Pestaña | Visibilidad | Descripción |
+|---------|-------------|-------------|
+| **Usuarios** | `admin` / `super_admin` | CRUD de usuarios, crear cuentas |
+| **Hospitales** | `admin` / `super_admin` | CRUD de hospitales |
+| **Sistema experto** | `super_admin` (único) | Importar catálogo (symptoms/diseases/treatments) desde CSV/Excel/JSON a MongoDB Atlas |
+
+## Compilación y checks
+
+```bash
+npm run build      # tsc + vite build (type-safe)
+npm run test       # vitest
+npm run lint       # eslint
+```
+
+## Despliegue (Vercel)
+
+1. Subir el repo en Vercel → framework preset **Vite**.
+2. Configurar `VITE_API_URL` apuntando al backend (Render).
+3. Build command: `npm run build` · Output dir: `dist`.
