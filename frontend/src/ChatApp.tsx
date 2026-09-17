@@ -72,6 +72,7 @@ export default function ChatApp() {
       isSending={app.isSending}
       isGeneratingReport={app.isGeneratingReport}
       currentSymptoms={app.currentSymptoms}
+      excludedSymptoms={app.excludedSymptoms}
       suggestedSymptoms={app.suggestedSymptoms}
       selectedDiagnosis={app.selectedDiagnosis}
       doctorReview={app.doctorReview}

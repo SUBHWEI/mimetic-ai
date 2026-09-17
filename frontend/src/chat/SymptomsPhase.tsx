@@ -11,6 +11,7 @@ type Props = {
   isSending: boolean
   isGeneratingReport: boolean
   currentSymptoms: string[]
+  excludedSymptoms: string[]
   suggestedSymptoms: string[]
   selectedDiagnosis: string | null
   doctorReview: DoctorReview
@@ -72,6 +73,26 @@ function DiagnosisCard({
           </span>
           <span>{d.matched_symptoms}/{d.total_input_symptoms} síntomas</span>
         </div>
+        {d.present_symptoms && d.present_symptoms.length > 0 && (
+          <div className="diag-symptom-lists">
+            <div className="diag-present">
+              <strong>Presentes:</strong>{' '}
+              {d.present_symptoms.map((s) => (
+                <span key={s} className="sym-tag">{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {d.missing_key_symptoms && d.missing_key_symptoms.length > 0 && (
+          <div className="diag-symptom-lists">
+            <div className="diag-missing">
+              <strong>Faltan por confirmar:</strong>{' '}
+              {d.missing_key_symptoms.map((s) => (
+                <span key={s} className="sym-tag missing">{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
         <button
           className={`diag-reject-btn ${rejected ? 'active' : ''}`}
           onClick={(e) => { e.stopPropagation(); onReject(d.disease_name) }}
@@ -333,7 +354,7 @@ function MessageBubble({
 
 export default function SymptomsPhase({
   user, onLogout, patientInfo, messages, input, setInput, isSending, isGeneratingReport,
-  currentSymptoms, suggestedSymptoms, selectedDiagnosis, doctorReview, endRef, onSend, onSuggestion,
+  currentSymptoms, excludedSymptoms, suggestedSymptoms, selectedDiagnosis, doctorReview, endRef, onSend, onSuggestion,
   onSelectDiagnosis, onGenerateReport, onToggleDiagnosisConfirmation, onToggleDiagnosisRejection,
   onAddManualDiagnosis, onRemoveManualDiagnosis, onToggleMedicine, onUpdateDose, onSetDoctorNotes,
   confidenceColor, severityColor,
@@ -414,6 +435,15 @@ export default function SymptomsPhase({
           <button className="quick-chip report" onClick={() => onSend('listo')}>
             Ver diagnósticos
           </button>
+        </div>
+      )}
+
+      {excludedSymptoms.length > 0 && (
+        <div className="excluded-symptoms">
+          <strong>Síntomas descartados:</strong>
+          {excludedSymptoms.map((s) => (
+            <span key={s} className="excluded-chip">✕ {s}</span>
+          ))}
         </div>
       )}
 

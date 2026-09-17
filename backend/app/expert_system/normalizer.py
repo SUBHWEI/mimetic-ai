@@ -834,70 +834,80 @@ STOP_WORDS = {"me", "te", "se", "lo", "la", "los", "las", "le", "el", "del",
 
 # ── Module-level caches ──────────────────────────────────────────
 _BUILTIN_REVERSE: dict[str, str] = {}    # synonym phrase → canonical
+_FOLDED_REVERSE: dict[str, str] = {}     # accent-folded phrase → canonical
 _CANONICAL_LIST: list[str] = []
 _LEARNED_REVERSE: dict[str, str] = {}    # custom learned → canonical
-_ATLAS_NAMES: set[str] = set()           # names loaded from MongoDB Atlas
-_ATLAS_REVERSE: dict[str, str] = {}      # atlas name → canonical (name itself)
-_ATLAS_NORM_REVERSE: dict[str, str] = {}  # _norm(atlas name) → csv name
+_LEARNED_FOLDED: dict[str, str] = {}     # learned, accent-folded → canonical
+_CATALOG_FOLDED: set[str] = set()        # folded names from DB catalog sync
+
+# Words that turn the following symptom into a denial (absence).
+NEGATION_WORDS = {
+    "no", "sin", "nunca", "ni", "tampoco", "nada", "jamas", "jamás",
+    "carece", "carezco",
+}
 
 
-def _norm(s: str) -> str:
-    """Lowercase, strip whitespace and remove accents."""
-    s = s.strip().lower()
+def _fold(s: str) -> str:
+    """Accent/uppercase-insensitive key (no accents, spaces collapsed)."""
+    s = s.lower().strip()
     nfkd = unicodedata.normalize("NFKD", s)
     return "".join(c for c in nfkd if not unicodedata.combining(c))
 
 
 def _build_builtin_index():
-    global _BUILTIN_REVERSE, _CANONICAL_LIST
+    global _BUILTIN_REVERSE, _FOLDED_REVERSE, _CANONICAL_LIST
     if _BUILTIN_REVERSE:
         return
     for canonical, variants in SYMPTOM_SYNONYMS.items():
         for variant in variants:
             _BUILTIN_REVERSE[variant] = canonical
+            _FOLDED_REVERSE[_fold(variant)] = canonical
         _BUILTIN_REVERSE[canonical] = canonical
+        _FOLDED_REVERSE[_fold(canonical)] = canonical
     _CANONICAL_LIST = list(SYMPTOM_SYNONYMS.keys())
-
-
-def reset_catalog():
-    """Clear the Atlas-loaded catalog (used in tests/reloads)."""
-    global _ATLAS_NAMES, _ATLAS_REVERSE, _ATLAS_NORM_REVERSE
-    _ATLAS_NAMES = set()
-    _ATLAS_REVERSE = {}
-    _ATLAS_NORM_REVERSE = {}
-
-
-def load_catalog(symptom_names: list[str]):
-    """Load the canonical symptom names current in MongoDB Atlas.
-
-    After this, ``find_symptom`` only returns symptoms whose name exists
-    in Atlas (accent-insensitive). Atlas names also become first-class
-    candidates, so symptoms added to the DB later are detected too.
-    """
-    global _ATLAS_NAMES, _ATLAS_REVERSE, _ATLAS_NORM_REVERSE
-    _ATLAS_NAMES = {_norm(name) for name in symptom_names if name}
-    _ATLAS_REVERSE = {}
-    _ATLAS_NORM_REVERSE = {}
-    for name in symptom_names:
-        if name:
-            _ATLAS_REVERSE[name] = name
-            _ATLAS_NORM_REVERSE.setdefault(_norm(name), name)
-
-
-def has_catalog() -> bool:
-    return bool(_ATLAS_NAMES)
-
-
-def is_in_catalog(canonical: str) -> bool:
-    """True if the canonical symptom name is present in the Atlas catalog."""
-    if not _ATLAS_NAMES:
-        return True
-    return _norm(canonical) in _ATLAS_NAMES
 
 
 def load_learned(learned: dict[str, str]):
     _LEARNED_REVERSE.clear()
-    _LEARNED_REVERSE.update(learned)
+    _LEARNED_FOLDED.clear()
+    for phrase, canonical in learned.items():
+        _LEARNED_REVERSE[phrase] = canonical
+        _LEARNED_FOLDED[_fold(phrase)] = canonical
+
+
+def load_catalog(symptom_names: list[str]):
+    """Register the symptom names actually loaded in the DB as canonical.
+
+    Compatibility layer for the routes that sync the knowledge base from
+    MongoDB Atlas: DB-specific names become resolvable (accent-insensitive)
+    even when they are not part of the built-in synonym catalog.
+    """
+    _build_builtin_index()
+    for name in symptom_names:
+        name = (name or "").strip()
+        if not name:
+            continue
+        folded = _fold(name)
+        _CATALOG_FOLDED.add(folded)
+        if folded not in _FOLDED_REVERSE:
+            _FOLDED_REVERSE[folded] = name
+        if name not in _BUILTIN_REVERSE:
+            _BUILTIN_REVERSE[name] = name
+        if name not in _CANONICAL_LIST:
+            _CANONICAL_LIST.append(name)
+
+
+def reset_catalog():
+    """Drop the DB-provided names added by ``load_catalog``."""
+    _CATALOG_FOLDED.clear()
+
+
+def has_catalog() -> bool:
+    return bool(_CATALOG_FOLDED)
+
+
+def is_in_catalog(canonical: str) -> bool:
+    return bool(canonical) and _fold(canonical) in _CATALOG_FOLDED
 
 
 def get_learned() -> dict[str, str]:
@@ -937,90 +947,116 @@ def _keyword_decompose(text: str) -> dict[str, float]:
 
 
 def find_symptom(user_input: str) -> Optional[str]:
-    """Find the canonical symptom that best matches user input.
-
-    Only returns symptoms that exist in the MongoDB Atlas catalog when one
-    has been loaded via ``load_catalog``. Falls back to the built-in
-    dictionary when no catalog is available.
-    """
+    """Find the canonical symptom that best matches user input."""
     _build_builtin_index()
     cleaned = normalize(user_input)
     if not cleaned:
         return None
+    folded = _fold(cleaned)
 
-    # 1. Check custom learned phrases first
-    if cleaned in _LEARNED_REVERSE:
-        cand = _LEARNED_REVERSE[cleaned]
-        if is_in_catalog(cand):
-            return cand
+    # 1. Check custom learned phrases first (accent-insensitive)
+    if folded in _LEARNED_FOLDED:
+        return _LEARNED_FOLDED[folded]
 
-    # 2. Built-in exact match
-    if cleaned in _BUILTIN_REVERSE:
-        cand = _BUILTIN_REVERSE[cleaned]
-        if is_in_catalog(cand):
-            return cand
+    # 2. Built-in exact match (accent-insensitive)
+    if folded in _FOLDED_REVERSE:
+        return _FOLDED_REVERSE[folded]
 
     # 3. Single-word exact match
-    words = cleaned.split()
-    if len(words) == 1 and words[0] in _BUILTIN_REVERSE:
-        cand = _BUILTIN_REVERSE[words[0]]
-        if is_in_catalog(cand):
-            return cand
+    words = folded.split()
+    if len(words) == 1 and words[0] in _FOLDED_REVERSE:
+        return _FOLDED_REVERSE[words[0]]
 
-    # 4. Substring phrase match (longest first, accent-insensitive). Walks
-    #    the learned mapping and the Atlas catalog too (multi-word).
-    cleaned_norm = _norm(cleaned)
-    candidates = sorted(_BUILTIN_REVERSE.items(), key=lambda x: -len(x[0]))
-    for phrase, canonical in candidates:
-        if len(phrase) > 2 and _norm(phrase) in cleaned_norm and is_in_catalog(canonical):
-            return canonical
-    for phrase, canonical in _LEARNED_REVERSE.items():
-        if len(phrase) > 2 and _norm(phrase) in cleaned_norm and is_in_catalog(canonical):
-            return canonical
-    for phrase, canonical in _ATLAS_REVERSE.items():
-        if len(phrase) > 2 and _norm(phrase) in cleaned_norm and is_in_catalog(canonical):
+    # 4. Substring phrase match (longest first, accent-insensitive)
+    for phrase, canonical in sorted(_FOLDED_REVERSE.items(), key=lambda x: -len(x[0])):
+        if len(phrase) > 2 and phrase in folded:
             return canonical
 
     # 5. Learned single-word
     for word in words:
-        if word in _LEARNED_REVERSE:
-            cand = _LEARNED_REVERSE[word]
-            if is_in_catalog(cand):
-                return cand
+        if word in _LEARNED_FOLDED:
+            return _LEARNED_FOLDED[word]
 
-    # 6. Built-in word-by-word exact (also checks Atlas catalog names,
-    #    accent-insensitive)
+    # 6. Built-in word-by-word exact
     for word in words:
-        word_norm = _norm(word)
-        if word in _BUILTIN_REVERSE:
-            cand = _BUILTIN_REVERSE[word]
-            if is_in_catalog(cand):
-                return cand
-        if word_norm in _ATLAS_NORM_REVERSE:
-            return _ATLAS_NORM_REVERSE[word_norm]
+        if word in _FOLDED_REVERSE:
+            return _FOLDED_REVERSE[word]
 
     # 7. Semantic decomposition (keyword index)
     scores = _keyword_decompose(cleaned)
     if scores:
         best = max(scores, key=scores.get)
         best_score = scores[best]
-        if best_score >= 0.3 and is_in_catalog(best):
+        if best_score >= 0.3:
             return best
 
     # 8. Fuzzy match per word (high threshold)
     for word in words:
         if len(word) <= 2:
             continue
-        matches = difflib.get_close_matches(
-            word,
-            [c for c in _CANONICAL_LIST if is_in_catalog(c)],
-            n=1,
-            cutoff=0.7,
-        )
+        matches = difflib.get_close_matches(word, _CANONICAL_LIST, n=1, cutoff=0.7)
         if matches:
             return matches[0]
 
     return None
+
+
+def find_negated_symptoms(user_input: str) -> list[str]:
+    """Detect symptoms the user explicitly states are ABSENT.
+
+    Handles "no tiene fiebre", "sin tos", "no ha tenido dolor de cabeza",
+    "ni fiebre ni tos", "no presenta nauseas", etc. Returns canonical
+    symptom names that were denied, so they can be used as negative evidence
+    instead of being added as present.
+    """
+    _build_builtin_index()
+    cleaned = normalize(user_input)
+    if not cleaned:
+        return []
+    folded = _fold(cleaned)
+
+    negated: set[str] = set()
+
+    # Split into clauses keeping the separator, so "ni ... ni ..." chains can
+    # propagate the denial to each item ("no presenta ni fiebre ni tos").
+    parts = re.split(r"(\s+y\s+|\s+ni\s+|\s*,\s*|\s*;\s*|\s+pero\s+)", cleaned)
+    prev_neg = False
+    prev_sep = ""
+    for idx in range(0, len(parts), 2):
+        clause = parts[idx].strip()
+        sep = parts[idx + 1].strip() if idx + 1 < len(parts) else ""
+        if not clause:
+            prev_neg = False
+            prev_sep = sep
+            continue
+        words = clause.split()
+        has_neg_word = any(w in NEGATION_WORDS for w in words)
+
+        if prev_sep == "ni":
+            # Items joined by "ni" inherit the denial opened before.
+            is_neg = prev_neg or has_neg_word
+        elif has_neg_word:
+            is_neg = True
+        else:
+            # "pero" / "y" / "," after a denial reset it ("no tos pero fiebre").
+            is_neg = False
+
+        if is_neg:
+            p_folded = _fold(clause)
+            # Match symptom phrases within the denied clause (longest first)
+            for phrase, canonical in sorted(_FOLDED_REVERSE.items(), key=lambda x: -len(x[0])):
+                if len(phrase) > 2 and phrase in p_folded:
+                    negated.add(canonical)
+                    break
+            # Also capture any remaining single-word matches
+            for w in words:
+                if w in _FOLDED_REVERSE:
+                    negated.add(_FOLDED_REVERSE[w])
+
+        prev_neg = is_neg
+        prev_sep = sep
+
+    return sorted(negated)
 
 
 def normalize_symptoms(raw_symptoms: list[str]) -> dict:
@@ -1029,12 +1065,18 @@ def normalize_symptoms(raw_symptoms: list[str]) -> dict:
         dict with keys:
             - matched: list of canonical symptom names
             - unmatched: list of raw inputs that could not be matched
+            - negated: list of canonical symptom names the user said are ABSENT
             - suggestions: dict of {raw_phrase: [suggested_canonical, ...]}
     """
-    result = {"matched": [], "unmatched": [], "suggestions": {}}
+    result = {"matched": [], "unmatched": [], "negated": [], "suggestions": {}}
     for raw in raw_symptoms:
         matched = find_symptom(raw)
         if matched:
+            # A symptom the user denied must never be added as present.
+            denied = find_negated_symptoms(raw)
+            if matched in denied:
+                result["negated"].append(matched)
+                continue
             result["matched"].append(matched)
             # If phrase contains "y" or commas, try each sub-phrase separately
             # e.g. "me duele al orinar y voy al baño seguido" -> both symptoms
@@ -1044,8 +1086,11 @@ def normalize_symptoms(raw_symptoms: list[str]) -> dict:
                         part = part.strip()
                         if part and part not in raw_symptoms:
                             extra = find_symptom(part)
-                            if extra and extra not in result["matched"] and extra != matched:
+                            part_denied = part and extra in find_negated_symptoms(part)
+                            if extra and extra not in result["matched"] and extra != matched and not part_denied:
                                 result["matched"].append(extra)
+                            if part_denied and extra:
+                                result["negated"].append(extra)
         else:
             result["unmatched"].append(raw)
             # Generate suggestions via keyword decomposition

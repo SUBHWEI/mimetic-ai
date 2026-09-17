@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from app.database.mongodb import get_db
 from app.auth.permissions import require_roles
 from app.rate_limit import limiter
-from app.expert_system.engine import diagnose, get_treatment
+from app.expert_system.engine import diagnose, get_treatment, narrow_diagnoses
 from app.expert_system.normalizer import normalize_symptoms, load_learned, load_catalog
 
 router = APIRouter()
@@ -11,10 +11,12 @@ router = APIRouter()
 
 class DiagnoseRequest(BaseModel):
     symptoms: list[str]
+    excluded_symptoms: list[str] = []
 
 
 class DiagnoseResponse(BaseModel):
     normalized_symptoms: list[str]
+    excluded_symptoms: list[str] = []
     unmatched_symptoms: list[str]
     suggestions: dict
     possible_diagnoses: list[dict]
@@ -71,12 +73,17 @@ async def diagnose_symptoms(
     result = normalize_symptoms(data.symptoms)
     normalized = result["matched"]
 
-    diagnoses_result = await diagnose(normalized)
+    diagnoses_result = await diagnose(
+        normalized,
+        excluded_symptoms=data.excluded_symptoms or result.get("negated", []),
+    )
+    narrow_pool = narrow_diagnoses(diagnoses_result, normalized)
     return DiagnoseResponse(
         normalized_symptoms=normalized,
+        excluded_symptoms=data.excluded_symptoms or result.get("negated", []),
         unmatched_symptoms=result["unmatched"],
         suggestions=result["suggestions"],
-        possible_diagnoses=diagnoses_result,
+        possible_diagnoses=narrow_pool,
         total_candidates=len(diagnoses_result),
     )
 

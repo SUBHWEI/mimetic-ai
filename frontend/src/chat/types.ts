@@ -5,6 +5,7 @@ export type Message = {
   suggestions?: string[]
   diagnoses?: Diagnosis[]
   treatment?: Treatment
+  excluded_symptoms?: string[]
 }
 
 export type Diagnosis = {
@@ -14,6 +15,8 @@ export type Diagnosis = {
   confidence: number
   matched_symptoms: number
   total_input_symptoms: number
+  present_symptoms?: string[]
+  missing_key_symptoms?: string[]
 }
 
 export type ManualDiagnosis = {

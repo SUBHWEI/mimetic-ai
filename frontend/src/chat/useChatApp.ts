@@ -16,6 +16,7 @@ export function useChatApp() {
   const [isSending, setIsSending] = useState(false)
   const [isGeneratingReport, setIsGeneratingReport] = useState(false)
   const [currentSymptoms, setCurrentSymptoms] = useState<string[]>([])
+  const [excludedSymptoms, setExcludedSymptoms] = useState<string[]>([])
   const [patientInfo, setPatientInfo] = useState<PatientInfo>({})
   const [reportHtml, setReportHtml] = useState<string | null>(null)
   const [formStep, setFormStep] = useState(0)
@@ -301,6 +302,7 @@ export function useChatApp() {
         body: JSON.stringify({
           message: text,
           current_symptoms: currentSymptoms,
+          excluded_symptoms: excludedSymptoms,
           patient_info: patientInfo,
         }),
       })
@@ -311,6 +313,9 @@ export function useChatApp() {
 
       if (data.normalized_symptoms && data.normalized_symptoms.length > 0) {
         setCurrentSymptoms(data.normalized_symptoms)
+      }
+      if (data.excluded_symptoms) {
+        setExcludedSymptoms(data.excluded_symptoms)
       }
       if (data.patient_info && Object.keys(data.patient_info).length > 0) {
         setPatientInfo(data.patient_info)
@@ -323,6 +328,7 @@ export function useChatApp() {
         suggestions: data.suggestions || [],
         diagnoses: data.diagnoses || [],
         treatment: data.treatment || undefined,
+        excluded_symptoms: data.excluded_symptoms || [],
       }
       setMessages(m => [...m, msg])
     } catch (err) {
@@ -442,6 +448,7 @@ export function useChatApp() {
     setFormStep(0)
     setReportHtml(null)
     setCurrentSymptoms([])
+    setExcludedSymptoms([])
     setPatientInfo({})
     setSelectedDiagnosis(null)
     setSessionId(null)
@@ -485,6 +492,7 @@ export function useChatApp() {
     isSending,
     isGeneratingReport,
     currentSymptoms,
+    excludedSymptoms,
     patientInfo,
     reportHtml,
     formStep,
