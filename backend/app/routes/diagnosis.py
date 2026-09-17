@@ -4,7 +4,7 @@ from app.database.mongodb import get_db
 from app.auth.permissions import require_roles
 from app.rate_limit import limiter
 from app.expert_system.engine import diagnose, get_treatment
-from app.expert_system.normalizer import normalize_symptoms, load_learned
+from app.expert_system.normalizer import normalize_symptoms, load_learned, load_catalog
 
 router = APIRouter()
 
@@ -49,6 +49,9 @@ async def _load_learned_from_db():
     docs = await db.learned_synonyms.find().to_list(length=None)
     mapping = {doc["phrase"]: doc["canonical_symptom"] for doc in docs}
     load_learned(mapping)
+
+    slice_find = await db.symptoms.find({}, {"name": 1}).to_list(length=None)
+    load_catalog([doc.get("name", "") for doc in slice_find])
 
 
 @router.post("/diagnose", response_model=DiagnoseResponse)

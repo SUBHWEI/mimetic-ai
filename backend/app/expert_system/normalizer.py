@@ -1,5 +1,6 @@
 import difflib
 import re
+import unicodedata
 from typing import Optional
 
 # ── Built-in synonym dictionary ──────────────────────────────────
@@ -835,6 +836,16 @@ STOP_WORDS = {"me", "te", "se", "lo", "la", "los", "las", "le", "el", "del",
 _BUILTIN_REVERSE: dict[str, str] = {}    # synonym phrase → canonical
 _CANONICAL_LIST: list[str] = []
 _LEARNED_REVERSE: dict[str, str] = {}    # custom learned → canonical
+_ATLAS_NAMES: set[str] = set()           # names loaded from MongoDB Atlas
+_ATLAS_REVERSE: dict[str, str] = {}      # atlas name → canonical (name itself)
+_ATLAS_NORM_REVERSE: dict[str, str] = {}  # _norm(atlas name) → csv name
+
+
+def _norm(s: str) -> str:
+    """Lowercase, strip whitespace and remove accents."""
+    s = s.strip().lower()
+    nfkd = unicodedata.normalize("NFKD", s)
+    return "".join(c for c in nfkd if not unicodedata.combining(c))
 
 
 def _build_builtin_index():
@@ -846,6 +857,42 @@ def _build_builtin_index():
             _BUILTIN_REVERSE[variant] = canonical
         _BUILTIN_REVERSE[canonical] = canonical
     _CANONICAL_LIST = list(SYMPTOM_SYNONYMS.keys())
+
+
+def reset_catalog():
+    """Clear the Atlas-loaded catalog (used in tests/reloads)."""
+    global _ATLAS_NAMES, _ATLAS_REVERSE, _ATLAS_NORM_REVERSE
+    _ATLAS_NAMES = set()
+    _ATLAS_REVERSE = {}
+    _ATLAS_NORM_REVERSE = {}
+
+
+def load_catalog(symptom_names: list[str]):
+    """Load the canonical symptom names current in MongoDB Atlas.
+
+    After this, ``find_symptom`` only returns symptoms whose name exists
+    in Atlas (accent-insensitive). Atlas names also become first-class
+    candidates, so symptoms added to the DB later are detected too.
+    """
+    global _ATLAS_NAMES, _ATLAS_REVERSE, _ATLAS_NORM_REVERSE
+    _ATLAS_NAMES = {_norm(name) for name in symptom_names if name}
+    _ATLAS_REVERSE = {}
+    _ATLAS_NORM_REVERSE = {}
+    for name in symptom_names:
+        if name:
+            _ATLAS_REVERSE[name] = name
+            _ATLAS_NORM_REVERSE.setdefault(_norm(name), name)
+
+
+def has_catalog() -> bool:
+    return bool(_ATLAS_NAMES)
+
+
+def is_in_catalog(canonical: str) -> bool:
+    """True if the canonical symptom name is present in the Atlas catalog."""
+    if not _ATLAS_NAMES:
+        return True
+    return _norm(canonical) in _ATLAS_NAMES
 
 
 def load_learned(learned: dict[str, str]):
@@ -890,7 +937,12 @@ def _keyword_decompose(text: str) -> dict[str, float]:
 
 
 def find_symptom(user_input: str) -> Optional[str]:
-    """Find the canonical symptom that best matches user input."""
+    """Find the canonical symptom that best matches user input.
+
+    Only returns symptoms that exist in the MongoDB Atlas catalog when one
+    has been loaded via ``load_catalog``. Falls back to the built-in
+    dictionary when no catalog is available.
+    """
     _build_builtin_index()
     cleaned = normalize(user_input)
     if not cleaned:
@@ -898,45 +950,73 @@ def find_symptom(user_input: str) -> Optional[str]:
 
     # 1. Check custom learned phrases first
     if cleaned in _LEARNED_REVERSE:
-        return _LEARNED_REVERSE[cleaned]
+        cand = _LEARNED_REVERSE[cleaned]
+        if is_in_catalog(cand):
+            return cand
 
     # 2. Built-in exact match
     if cleaned in _BUILTIN_REVERSE:
-        return _BUILTIN_REVERSE[cleaned]
+        cand = _BUILTIN_REVERSE[cleaned]
+        if is_in_catalog(cand):
+            return cand
 
     # 3. Single-word exact match
     words = cleaned.split()
     if len(words) == 1 and words[0] in _BUILTIN_REVERSE:
-        return _BUILTIN_REVERSE[words[0]]
+        cand = _BUILTIN_REVERSE[words[0]]
+        if is_in_catalog(cand):
+            return cand
 
-    # 4. Substring phrase match (longest first)
-    for phrase, canonical in sorted(_BUILTIN_REVERSE.items(), key=lambda x: -len(x[0])):
-        if len(phrase) > 2 and phrase in cleaned:
+    # 4. Substring phrase match (longest first, accent-insensitive). Walks
+    #    the learned mapping and the Atlas catalog too (multi-word).
+    cleaned_norm = _norm(cleaned)
+    candidates = sorted(_BUILTIN_REVERSE.items(), key=lambda x: -len(x[0]))
+    for phrase, canonical in candidates:
+        if len(phrase) > 2 and _norm(phrase) in cleaned_norm and is_in_catalog(canonical):
+            return canonical
+    for phrase, canonical in _LEARNED_REVERSE.items():
+        if len(phrase) > 2 and _norm(phrase) in cleaned_norm and is_in_catalog(canonical):
+            return canonical
+    for phrase, canonical in _ATLAS_REVERSE.items():
+        if len(phrase) > 2 and _norm(phrase) in cleaned_norm and is_in_catalog(canonical):
             return canonical
 
     # 5. Learned single-word
     for word in words:
         if word in _LEARNED_REVERSE:
-            return _LEARNED_REVERSE[word]
+            cand = _LEARNED_REVERSE[word]
+            if is_in_catalog(cand):
+                return cand
 
-    # 6. Built-in word-by-word exact
+    # 6. Built-in word-by-word exact (also checks Atlas catalog names,
+    #    accent-insensitive)
     for word in words:
+        word_norm = _norm(word)
         if word in _BUILTIN_REVERSE:
-            return _BUILTIN_REVERSE[word]
+            cand = _BUILTIN_REVERSE[word]
+            if is_in_catalog(cand):
+                return cand
+        if word_norm in _ATLAS_NORM_REVERSE:
+            return _ATLAS_NORM_REVERSE[word_norm]
 
     # 7. Semantic decomposition (keyword index)
     scores = _keyword_decompose(cleaned)
     if scores:
         best = max(scores, key=scores.get)
         best_score = scores[best]
-        if best_score >= 0.3:
+        if best_score >= 0.3 and is_in_catalog(best):
             return best
 
     # 8. Fuzzy match per word (high threshold)
     for word in words:
         if len(word) <= 2:
             continue
-        matches = difflib.get_close_matches(word, _CANONICAL_LIST, n=1, cutoff=0.7)
+        matches = difflib.get_close_matches(
+            word,
+            [c for c in _CANONICAL_LIST if is_in_catalog(c)],
+            n=1,
+            cutoff=0.7,
+        )
         if matches:
             return matches[0]
 

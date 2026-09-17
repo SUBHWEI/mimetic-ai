@@ -114,13 +114,18 @@ async def converse(
                     ready=True,
                 )
 
-        # ── 3. Load learned synonyms ────────────────────────────
-        from app.expert_system.normalizer import load_learned
+        # ── 3. Load learned synonyms + Atlas catalog ──────────
+        from app.expert_system.normalizer import load_learned, load_catalog
         db = get_db()
         if db is not None:
             docs = await db.learned_synonyms.find().to_list(length=None)
             mapping = {doc["phrase"]: doc["canonical_symptom"] for doc in docs}
             load_learned(mapping)
+
+            # Build the catalog of symptoms currently in MongoDB Atlas so the
+            # matcher only captures symptoms that are actually loaded in the DB.
+            slice_find = await db.symptoms.find({}, {"name": 1}).to_list(length=None)
+            load_catalog([doc.get("name", "") for doc in slice_find])
 
         # ── 4. Process as symptom ───────────────────────────────
         result = normalize_symptoms([msg])
